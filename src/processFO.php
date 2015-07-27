@@ -13,19 +13,24 @@
   // Tweak some PHP configurations
   ini_set('memory_limit','1536M'); // 1.5 GB
   ini_set('max_execution_time', 18000); // 5 hours
-
 */
+error_reporting(E_ALL);
+ini_set('display_errors',1);
 
 $xmlFile = ($_SERVER['DOCUMENT_ROOT'] . '/files/working/GrantsDBExtract20150727.xml');
 try{
   // Open the XML
   echo ('TEST FROM HEROKU' . $_SERVER['DOCUMENT_ROOT']);
 
-  print_r(get_loaded_extensions());
-
-  return;
-
+  //print_r(get_loaded_extensions());
   $handle = fopen($xmlFile, 'r');
+
+  if (!file_exists($xmlFile)) {
+      print 'File does not exist'; return;
+  }
+  //return;
+
+
 
   // Get the nodestring incrementally from the xml file by defining a callback
   // In this case using a anon function.
@@ -35,7 +40,7 @@ try{
   });
   fclose($handle);
 }catch (Exception $e){
-  print 'Exception >>>>>>>>>>>>' . $e;
+  print_r('Exception >>>>>>>>>>>>' . $e);
 }
 
 /**
