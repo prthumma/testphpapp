@@ -19,7 +19,11 @@
 $xmlFile = ($_SERVER['DOCUMENT_ROOT'] . '/files/working/GrantsDBExtract20150727.xml');
 try{
   // Open the XML
-  echo ('TEST FROM HEROKU' . $_SERVER['DOCUMENT_ROOT']); return;
+  echo ('TEST FROM HEROKU' . $_SERVER['DOCUMENT_ROOT']);
+
+  print_r(get_loaded_extensions());
+
+  return;
 
   $handle = fopen($xmlFile, 'r');
 
