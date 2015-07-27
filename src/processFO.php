@@ -16,7 +16,7 @@
 
 */
 
-$xmlFile = '../files/working/GrantsDBExtract20150727.xml';
+$xmlFile = ($_SERVER['DOCUMENT_ROOT'] . '/files/working/GrantsDBExtract20150727.xml');
 try{
   // Open the XML
   $handle = fopen($xmlFile, 'r');
