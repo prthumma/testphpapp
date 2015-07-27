@@ -68,7 +68,7 @@ function nodeStringFromXMLFile($handle, $startNode, $endNode, $callback=null) {
       break;
     }
     // Find where the node ends
-    $endPos = getPos($handle, $endNode, $startPos) + mb_strlen($endNode);
+    $endPos = getPos($handle, $endNode, $startPos) + strlen($endNode);
     // Jump back to the start position
     fseek($handle, $startPos);
     // Read the data
@@ -98,10 +98,10 @@ function getPos($handle, $string, $startFrom=0, $chunk=1024, $prev='') {
   // Read data
   $data = fread($handle, $chunk);
   // Try to find the search $string in this chunk
-  $stringPos = mb_strpos($prev.$data, $string);
+  $stringPos = strpos($prev.$data, $string);
   // We found the string, return the position
   if($stringPos !== false ) {
-    return $stringPos+$startFrom - mb_strlen($prev);
+    return $stringPos+$startFrom - strlen($prev);
   }
   // We reached the end of the file
   if(feof($handle)) {
