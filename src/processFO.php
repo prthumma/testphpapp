@@ -19,6 +19,8 @@
 $xmlFile = ($_SERVER['DOCUMENT_ROOT'] . '/files/working/GrantsDBExtract20150727.xml');
 try{
   // Open the XML
+  echo 'TEST FROM HEROKU'; return;
+
   $handle = fopen($xmlFile, 'r');
 
   // Get the nodestring incrementally from the xml file by defining a callback
