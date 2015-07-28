@@ -5,33 +5,36 @@ class FundingOpportunity{
   private $data = array();
 
   public function __construct($data){
-    $this->$data = $data;
-    print_r($this->$data);
+    $this->data = $data;
   }
 
-  public function getFormattedData($field){
-    switch($field){
+  public function getFormattedData($key){
+    switch($key){
       case "PostDate":
       case "ApplicationsDueDate":
       case "ArchiveDate":
-        return $this->data[$field];
+        $tempData = $this->formatDate($this->data[$key]);
+        return "'{$tempData}'";
         break;
 
       case "FundingActivityCategory":
       case "FundingInstrumentType":
       case "EligibilityCategory":
-        return $this->data[$field];
+        $tempData = $this->convertCodes($this->data[$key]);
+        return "'{$tempData}'";
         break;
 
       case "NumberOfAwards":
       case "ModificationNumber":
-        return $this->data[$field];
+        $tempData = $this->convertNumber($this->data[$key]);
+        return "'{$tempData}'";
         break;
 
       case "EstimatedFunding":
       case "AwardCeiling":
       case "AwardFloor":
-        return $this->data[$field];
+        $tempData = $this->convertNumber($this->data[$key]);
+        return "'{$tempData}'";
         break;
 
       default:
@@ -56,9 +59,36 @@ class FundingOpportunity{
           AgencyEmailAddress              varchar(80),
           AgencyEmailDescriptor           varchar(100)
         */
-        return $this->data[$field];
+        $tempData = ($this->data[$key] ? pg_escape_string(''.$this->data[$key]) : null);
+        return "'{$tempData}'";
         break;
     }
+  }
+
+  private function formatDate($value){
+    if(is_numeric($value)){
+      return date("m/d/Y", strtotime($value));
+    }
+
+    return null;
+  }
+
+  private function convertCodes($value){
+    if(is_array($value)){
+      return implode(';', $value);
+    }else if(!empty($value)){
+      return $value;
+    }
+
+    return null;
+  }
+
+  private function convertNumber($value){
+    if(is_numeric($value)){
+      return $value;
+    }
+
+    return null;
   }
 
 }
