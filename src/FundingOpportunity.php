@@ -14,7 +14,7 @@ class FundingOpportunity{
       case "ApplicationsDueDate":
       case "ArchiveDate":
         $tempData = $this->formatDate($this->data[$key]);
-        return $tempData ? $tempData : "NULLIF('','')::date";
+        return $tempData ? "'{$tempData}'" : "NULLIF('','')::date";
         break;
 
       case "FundingActivityCategory":
