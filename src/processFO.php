@@ -182,10 +182,10 @@ function nodeStringFromXMLFile($handle, $startNode, $endNode, $callback=null, $d
       $callback($data, $db);
     // next iteration starts reading from here
 
-    $cnt++;
+    /*$cnt++;
     if($cnt > 0){
       return;
-    }
+    }*/
     $cursorPos = ftell($handle);
   }
 }
