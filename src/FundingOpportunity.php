@@ -14,7 +14,7 @@ class FundingOpportunity{
       case "ApplicationsDueDate":
       case "ArchiveDate":
         $tempData = $this->formatDate($this->data[$key]);
-        return "'{$tempData}'";
+        return $tempData ? $tempData : "NULLIF('','')::date";
         break;
 
       case "FundingActivityCategory":
@@ -27,14 +27,14 @@ class FundingOpportunity{
       case "NumberOfAwards":
       case "ModificationNumber":
         $tempData = $this->convertNumber($this->data[$key]);
-        return $tempData;
+        return $tempData ? $tempData : "NULLIF('','')::integer";
         break;
 
       case "EstimatedFunding":
       case "AwardCeiling":
       case "AwardFloor":
         $tempData = $this->convertNumber($this->data[$key]);
-        return $tempData;
+        return $tempData ? $tempData : "cast(NULLIF('','') as double precision)";
         break;
 
       default:

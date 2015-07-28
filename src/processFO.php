@@ -104,7 +104,7 @@ function processDataRow($db, $dataRow){
                 {$fo->getFormattedData('ObtainFundingOppText')}, {$fo->getFormattedData('FundingOppURL')}, {$fo->getFormattedData('AgencyContact')}, {$fo->getFormattedData('AgencyEmailAddress')},
                 {$fo->getFormattedData('AgencyEmailDescriptor')});";
 
-      //print $query;
+      print $query;
       pg_query($db, $query);
   }catch (Exception $e){
     print $e;
