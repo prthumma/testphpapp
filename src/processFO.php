@@ -1,5 +1,7 @@
 <?php
 
+require_once($_SERVER['DOCUMENT_ROOT'] . '/src/FundingOpportunity.php');
+
 //set this if you need to see errors
 if($_GET['errors'] == 'true'){
   error_reporting(E_ALL);
@@ -68,7 +70,7 @@ try{
   print ('Exception >>>>>>>>>>>>' . $e);
 }
 
-require_once($_SERVER['DOCUMENT_ROOT'] . '/src/FundingOpportunity.php');
+
 
 function processDataRow($db, $dataRow){
   try{
