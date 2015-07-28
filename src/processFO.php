@@ -95,14 +95,14 @@ function processDataRow($db, $dataRow){
             eligibilitycategory, additionaleligibilityinfo, costsharing,
             obtainfundingopptext, fundingoppurl, agencycontact, agencyemailaddress,
             agencyemaildescriptor)
-        VALUES ({$fo->getFormattedData('PostDate')}, $fo->getFormattedData('ModificationNumber'), $fo->getFormattedData('FundingInstrumentType'), $fo->getFormattedData('FundingActivityCategory'),
-                $fo->getFormattedData('OtherCategoryExplanation'), $fo->getFormattedData('NumberOfAwards'), $fo->getFormattedData('EstimatedFunding'), $fo->getFormattedData('AwardCeiling'),
-                $fo->getFormattedData('AwardFloor'), $fo->getFormattedData('AgencyMailingAddress'), $fo->getFormattedData('FundingOppTitle'), $fo->getFormattedData('FundingOppNumber'),
-                $fo->getFormattedData('ApplicationsDueDate'), $fo->getFormattedData('ApplicationsDueDateExplanation'), $fo->getFormattedData('ArchiveDate'),
-                $fo->getFormattedData('Location'), $fo->getFormattedData('Office'), $fo->getFormattedData('Agency'), $fo->getFormattedData('FundingOppDescription'), $fo->getFormattedData('CFDANumber'),
-                $fo->getFormattedData('EligibilityCategory'), $fo->getFormattedData('AdditionalEligibilityInfo'), $fo->getFormattedData('CostSharing'),
-                $fo->getFormattedData('ObtainFundingOppText'), $fo->getFormattedData('FundingOppURL'), $fo->getFormattedData('AgencyContact'), $fo->getFormattedData('AgencyEmailAddress'),
-                $fo->getFormattedData('AgencyEmailDescriptor'));";
+        VALUES ({$fo->getFormattedData('PostDate')}, {$fo->getFormattedData('ModificationNumber')}, {$fo->getFormattedData('FundingInstrumentType')}, {$fo->getFormattedData('FundingActivityCategory')},
+                {$fo->getFormattedData('OtherCategoryExplanation')}, {$fo->getFormattedData('NumberOfAwards')}, {$fo->getFormattedData('EstimatedFunding')}, {$fo->getFormattedData('AwardCeiling')},
+                {$fo->getFormattedData('AwardFloor')}, {$fo->getFormattedData('AgencyMailingAddress')}, {$fo->getFormattedData('FundingOppTitle')}, {$fo->getFormattedData('FundingOppNumber')},
+                {$fo->getFormattedData('ApplicationsDueDate')}, {$fo->getFormattedData('ApplicationsDueDateExplanation')}, {$fo->getFormattedData('ArchiveDate')},
+                {$fo->getFormattedData('Location')}, {$fo->getFormattedData('Office')}, {$fo->getFormattedData('Agency')}, {$fo->getFormattedData('FundingOppDescription')}, {$fo->getFormattedData('CFDANumber')},
+                {$fo->getFormattedData('EligibilityCategory')}, {$fo->getFormattedData('AdditionalEligibilityInfo')}, {$fo->getFormattedData('CostSharing')},
+                {$fo->getFormattedData('ObtainFundingOppText')}, {$fo->getFormattedData('FundingOppURL')}, {$fo->getFormattedData('AgencyContact')}, {$fo->getFormattedData('AgencyEmailAddress')},
+                {$fo->getFormattedData('AgencyEmailDescriptor')});";
 
     print $query;
       //pg_query($db, $query);

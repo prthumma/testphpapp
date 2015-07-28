@@ -6,6 +6,7 @@ class FundingOpportunity{
 
   public function __construct($data){
     $this->$data = $data;
+    print_r($this->$data);
   }
 
   public function getFormattedData($field){
