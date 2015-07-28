@@ -76,16 +76,14 @@ function processDataRow($db, $dataRow){
   try{
 
       $fo = new FundingOpportunity($dataRow);
+      $foNumber = $dataRow['FundingOppNumber'];
+      if(empty($foNumber)){
+        return;
+      }
 
-    /* VALUES ('12/30/2015', 10, 'G;CA', 'AG;AR',
-          'othercategoryexplanation-prab', 10, 111111.11, 22222.22,
-          3333.33, 'agencymailingaddress', 'New FO 08', 'DHS-15-MT-082-01-02',
-          '01/31/2015', 'test', '03/31/2015',
-          'location', 'OCO NDGRANTS 02', 'Department of Homeland Security - FEMA', 'test', '97.082',
-          '00;01', 'Not Available', 'N',
-          'News', 'http://www.cnn.com', 'Salman Arshad&lt;br/&gt;Tester&lt;br/&gt;Phone 123456789', 'sarshad@dminc.com',
-          'Contact');*/
-
+      $result = pg_query($db, "SELECT id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}'");
+      $rows = pg_num_rows($result);
+      if($rows == 0 ){
         $query = "INSERT INTO fundingopportunity(
             postdate, modificationnumber, fundinginstrumenttype, fundingactivitycategory,
             othercategoryexplanation, numberofawards, estimatedfunding, awardceiling,
@@ -103,7 +101,23 @@ function processDataRow($db, $dataRow){
                 {$fo->getFormattedData('EligibilityCategory')}, {$fo->getFormattedData('AdditionalEligibilityInfo')}, {$fo->getFormattedData('CostSharing')},
                 {$fo->getFormattedData('ObtainFundingOppText')}, {$fo->getFormattedData('FundingOppURL')}, {$fo->getFormattedData('AgencyContact')}, {$fo->getFormattedData('AgencyEmailAddress')},
                 {$fo->getFormattedData('AgencyEmailDescriptor')});";
-
+      }else{
+        $query = "UPDATE fundingopportunity
+            set postdate = {$fo->getFormattedData('PostDate')}, modificationnumber = {$fo->getFormattedData('ModificationNumber')},
+            fundinginstrumenttype = {$fo->getFormattedData('FundingInstrumentType')}, fundingactivitycategory = {$fo->getFormattedData('FundingActivityCategory')},
+            othercategoryexplanation = {$fo->getFormattedData('OtherCategoryExplanation')}, numberofawards = {$fo->getFormattedData('NumberOfAwards')},
+            estimatedfunding = {$fo->getFormattedData('EstimatedFunding')}, awardceiling = {$fo->getFormattedData('AwardCeiling')},
+            awardfloor = {$fo->getFormattedData('AwardFloor')}, agencymailingaddress  = {$fo->getFormattedData('AgencyMailingAddress')},
+            fundingopptitle = {$fo->getFormattedData('FundingOppTitle')}, applicationsduedate = {$fo->getFormattedData('ApplicationsDueDate')},
+            applicationsduedateexplanation = {$fo->getFormattedData('ApplicationsDueDateExplanation')}, archivedate = {$fo->getFormattedData('ArchiveDate')},
+            location = {$fo->getFormattedData('Location')}, office = {$fo->getFormattedData('Office')}, agency = {$fo->getFormattedData('Agency')},
+            fundingoppdescription = {$fo->getFormattedData('FundingOppDescription')}, cfdanumber = {$fo->getFormattedData('CFDANumber')},
+            eligibilitycategory = {$fo->getFormattedData('EligibilityCategory')}, additionaleligibilityinfo = {$fo->getFormattedData('AdditionalEligibilityInfo')},
+            costsharing = {$fo->getFormattedData('CostSharing')}, obtainfundingopptext = {$fo->getFormattedData('ObtainFundingOppText')}, fundingoppurl = {$fo->getFormattedData('FundingOppURL')},
+            agencycontact = {$fo->getFormattedData('AgencyContact')}, agencyemailaddress = {$fo->getFormattedData('AgencyEmailAddress')}, agencyemaildescriptor = {$fo->getFormattedData('AgencyEmailDescriptor')},
+            lastmodifieddate = now()
+            WHERE fundingoppnumber = {$fo->getFormattedData('FundingOppNumber')}";
+      }
       //print $query;
       pg_query($db, $query);
   }catch (Exception $e){
@@ -168,10 +182,10 @@ function nodeStringFromXMLFile($handle, $startNode, $endNode, $callback=null, $d
       $callback($data, $db);
     // next iteration starts reading from here
 
-    /*$cnt++;
+    $cnt++;
     if($cnt > 0){
       return;
-    }*/
+    }
     $cursorPos = ftell($handle);
   }
 }
