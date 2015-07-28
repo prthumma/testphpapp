@@ -1,10 +1,16 @@
 <?php
 
+//set this if you need to see errors
 if($_GET['errors'] == 'true'){
   error_reporting(E_ALL);
   ini_set('display_errors',1);
 }
 
+// Tweak some PHP configurations if needed
+//  ini_set('memory_limit','1536M'); // 1.5 GB
+ini_set('max_execution_time', 300); // 5 min
+
+//clean up working directory
 foreach (new DirectoryIterator(($_SERVER['DOCUMENT_ROOT'] . '/files/working')) as $fileInfo) {
   if(!$fileInfo->isDot()) {
     unlink($fileInfo->getPathname());
@@ -15,9 +21,92 @@ foreach (new DirectoryIterator(($_SERVER['DOCUMENT_ROOT'] . '/files/working')) a
 $todayDate = date('Ymd');
 $todayFile = "GrantsDBExtract{$todayDate}";
 $xmlUrl = "http://training.grants.gov/web/grants/xml-extract.html?p_p_id=xmlextract_WAR_grantsxmlextractportlet_INSTANCE_5NxW0PeTnSUa&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_cacheability=cacheLevelPage&p_p_col_id=column-1&p_p_col_pos=1&p_p_col_count=2&download={$todayFile}.zip";
+$xmlZipFile = ($_SERVER['DOCUMENT_ROOT'] . "/files/working/{$todayFile}.zip");
+$temp_file_contents = collect_file($xmlUrl);
+write_to_file($temp_file_contents, $xmlZipFile);
 
-//die($xmlUrl );
+//unzip the file
+$xmlExtractDir = ($_SERVER['DOCUMENT_ROOT'] . '/files/working');
+$zip = new ZipArchive;
+if ($zip->open($xmlZipFile) === TRUE) {
+  $zip->extractTo($xmlExtractDir);
+  $zip->close();
+  echo 'ok. File Extracted';
+} else {
+  echo 'failed';
+  return;
+}
 
+
+$xmlExtractedFile = "{$xmlExtractDir}/{$todayFile}.xml";
+try{
+
+  if (!file_exists($xmlExtractedFile)) {
+    print 'File does not exist'; return;
+  }else {
+    print "File {$xmlExtractedFile} exists";
+  }
+
+  $handle = fopen($xmlExtractedFile, 'r');
+  //$dataRows = array();
+  $db = pg_connect(getenv('DATABASE_URL'));
+  if (!$db) {
+    echo "Database connection error.";
+    exit;
+  }
+  // Get the nodestring incrementally from the xml file by defining a callback
+  // In this case using a anon function.
+  nodeStringFromXMLFile($handle, '<FundingOppSynopsis>', '</FundingOppSynopsis>', function($nodeText, $db){
+    // Transform the XMLString into an array and
+    $dataRow = getArrayFromXMLString($nodeText);
+    processDataRow($db, $dataRow);
+  }, $db);
+
+  fclose($handle);
+
+}catch (Exception $e){
+  print ('Exception >>>>>>>>>>>>' . $e);
+}
+
+include_once('FundingOpportunity.php');
+
+function processDataRow($db, $dataRow){
+  try{
+
+      $fo = new FundingOpportunity($dataRow);
+
+      $query = "INSERT INTO fundingopportunity(
+            postdate, modificationnumber, fundinginstrumenttype, fundingactivitycategory,
+            othercategoryexplanation, numberofawards, estimatedfunding, awardceiling,
+            awardfloor, agencymailingaddress, fundingopptitle, fundingoppnumber,
+            applicationsduedate, applicationsduedateexplanation, archivedate,
+            location, office, agency, fundingoppdescription, cfdanumber,
+            eligibilitycategory, additionaleligibilityinfo, costsharing,
+            obtainfundingopptext, fundingoppurl, agencycontact, agencyemailaddress,
+            agencyemaildescriptor)
+      /* VALUES ('12/30/2015', 10, 'G;CA', 'AG;AR',
+            'othercategoryexplanation-prab', 10, 111111.11, 22222.22,
+            3333.33, 'agencymailingaddress', 'New FO 08', 'DHS-15-MT-082-01-02',
+            '01/31/2015', 'test', '03/31/2015',
+            'location', 'OCO NDGRANTS 02', 'Department of Homeland Security - FEMA', 'test', '97.082',
+            '00;01', 'Not Available', 'N',
+            'News', 'http://www.cnn.com', 'Salman Arshad&lt;br/&gt;Tester&lt;br/&gt;Phone 123456789', 'sarshad@dminc.com',
+            'Contact');*/
+        VALUES ($fo->getFormattedData('PostDate'), $fo->getFormattedData('ModificationNumber'), $fo->getFormattedData('FundingInstrumentType'), $fo->getFormattedData('FundingActivityCategory'),
+                $fo->getFormattedData('OtherCategoryExplanation'), $fo->getFormattedData('NumberOfAwards'), $fo->getFormattedData('EstimatedFunding'), $fo->getFormattedData('AwardCeiling'),
+                $fo->getFormattedData('AwardFloor'), $fo->getFormattedData('AgencyMailingAddress'), $fo->getFormattedData('FundingOppTitle'), $fo->getFormattedData('FundingOppNumber'),
+                $fo->getFormattedData('ApplicationsDueDate'), $fo->getFormattedData('ApplicationsDueDateExplanation'), $fo->getFormattedData('ArchiveDate'),
+                $fo->getFormattedData('Location'), $fo->getFormattedData('Office'), $fo->getFormattedData('Agency'), $fo->getFormattedData('FundingOppDescription'), $fo->getFormattedData('CFDANumber'),
+                $fo->getFormattedData('EligibilityCategory'), $fo->getFormattedData('AdditionalEligibilityInfo'), $fo->getFormattedData('CostSharing'),
+                $fo->getFormattedData('ObtainFundingOppText'), $fo->getFormattedData('FundingOppURL'), $fo->getFormattedData('AgencyContact'), $fo->getFormattedData('AgencyEmailAddress'),
+                $fo->getFormattedData('AgencyEmailDescriptor'));";
+
+      pg_query($db, $query);
+  }catch (Exception $e){
+    print $e;
+  }
+
+}
 
 function collect_file($url){
   $ch = curl_init();
@@ -33,61 +122,10 @@ function collect_file($url){
   return($result);
 }
 
-function write_to_file($text,$new_filename){
+function write_to_file($text, $new_filename){
   $fp = fopen($new_filename, 'w');
   fwrite($fp, $text);
   fclose($fp);
-}
-// start loop here
-
-$xmlZipFile = ($_SERVER['DOCUMENT_ROOT'] . '/files/working/GrantsDBExtract.zip');
-$temp_file_contents = collect_file($xmlUrl);
-write_to_file($temp_file_contents, $xmlZipFile);
-//return;
-// end loop here
-
-
-$xmlExtractDir = ($_SERVER['DOCUMENT_ROOT'] . '/files/working');
-$zip = new ZipArchive;
-if ($zip->open($xmlZipFile) === TRUE) {
-  $zip->extractTo($xmlExtractDir);
-  $zip->close();
-  echo 'ok';
-} else {
-  echo 'failed';
-}
-
-// Tweak some PHP configurations
-//  ini_set('memory_limit','1536M'); // 1.5 GB
-//  ini_set('max_execution_time', 18000); // 5 hours
-
-
-
-$xmlExtractFile = "{$xmlExtractDir}/{$todayFile}.xml";//($_SERVER['DOCUMENT_ROOT'] . '/files/working/GrantsDBExtract20150727_orig.xml');
-try{
-  // Open the XML
-  echo ('TEST FROM HEROKU' . $_SERVER['DOCUMENT_ROOT']);
-
-  //print_r(get_loaded_extensions());
-
-  if (!file_exists($xmlExtractFile)) {
-    print 'File does not exist'; return;
-  }else {
-    print "File {$xmlExtractFile} exists";
-  }
-  // return;
-
-
-  $handle = fopen($xmlExtractFile, 'r');
-  // Get the nodestring incrementally from the xml file by defining a callback
-  // In this case using a anon function.
-  nodeStringFromXMLFile($handle, '<FundingOppSynopsis>', '</FundingOppSynopsis>', function($nodeText){
-    // Transform the XMLString into an array and
-    print_r(getArrayFromXMLString($nodeText));
-  });
-  fclose($handle);
-}catch (Exception $e){
-  print_r('Exception >>>>>>>>>>>>' . $e);
 }
 
 /**
@@ -105,7 +143,8 @@ try{
  * @param string $endNode - what is the end node name e.g </item>
  * @param callable $callback - an anonymous function
  */
-function nodeStringFromXMLFile($handle, $startNode, $endNode, $callback=null) {
+function nodeStringFromXMLFile($handle, $startNode, $endNode, $callback=null, $db) {
+  $cnt = 0;
   $cursorPos = 0;
   while(true) {
     // Find start position
@@ -121,9 +160,14 @@ function nodeStringFromXMLFile($handle, $startNode, $endNode, $callback=null) {
     // Read the data
     $data = fread($handle, ($endPos-$startPos));
     // pass the $data into the callback
-    // if(!empty($data))
-    $callback($data);
+    if(!empty($data))
+      $callback($data, $db);
     // next iteration starts reading from here
+
+    $cnt++;
+    if($cnt > 0){
+      return;
+    }
     $cursorPos = ftell($handle);
   }
 }
