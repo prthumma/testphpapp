@@ -2,7 +2,7 @@
 
 class FundingOpportunity{
 
-  private $data = null;
+  private $data = array();
 
   public function __construct($data){
     $this->$data = $data;
