@@ -13,23 +13,23 @@ if($_GET['errors'] == 'true'){
 ini_set('max_execution_time', 300); // 5 min
 
 //clean up working directory
-foreach (new DirectoryIterator(($_SERVER['DOCUMENT_ROOT'] . '/files/working')) as $fileInfo) {
+/*foreach (new DirectoryIterator(($_SERVER['DOCUMENT_ROOT'] . '/files/working')) as $fileInfo) {
   if(!$fileInfo->isDot()) {
     unlink($fileInfo->getPathname());
   }
-}
+}*/
 
 //Download today file
 $todayDate = date('Ymd');
 $todayFile = "GrantsDBExtract{$todayDate}";
 $xmlUrl = "http://training.grants.gov/web/grants/xml-extract.html?p_p_id=xmlextract_WAR_grantsxmlextractportlet_INSTANCE_5NxW0PeTnSUa&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_cacheability=cacheLevelPage&p_p_col_id=column-1&p_p_col_pos=1&p_p_col_count=2&download={$todayFile}.zip";
 $xmlZipFile = ($_SERVER['DOCUMENT_ROOT'] . "/files/working/{$todayFile}.zip");
-$temp_file_contents = collect_file($xmlUrl);
-write_to_file($temp_file_contents, $xmlZipFile);
+/*$temp_file_contents = collect_file($xmlUrl);
+write_to_file($temp_file_contents, $xmlZipFile);*/
 
 //unzip the file
 $xmlExtractDir = ($_SERVER['DOCUMENT_ROOT'] . '/files/working');
-$zip = new ZipArchive;
+/*$zip = new ZipArchive;
 if ($zip->open($xmlZipFile) === TRUE) {
   $zip->extractTo($xmlExtractDir);
   $zip->close();
@@ -37,7 +37,7 @@ if ($zip->open($xmlZipFile) === TRUE) {
 } else {
   echo 'failed';
   return;
-}
+}*/
 
 
 $xmlExtractedFile = "{$xmlExtractDir}/{$todayFile}.xml";
