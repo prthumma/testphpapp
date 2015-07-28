@@ -60,7 +60,7 @@ class FundingOpportunity{
           AgencyEmailDescriptor           varchar(100)
         */
         $tempData = ($this->data[$key] ? pg_escape_string($this->data[$key]) : "NULLIF('','')::varchar");
-        return "'{$tempData}'";
+        return $tempData;
         break;
     }
   }
