@@ -4,7 +4,7 @@ class FundingOpportunity{
 
   private $data = null;
 
-  public function FundFundingOpportunty($data){
+  public function FundingOpportunity($data){
     $this->$data = $data;
   }
 
