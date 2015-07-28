@@ -27,14 +27,14 @@ class FundingOpportunity{
       case "NumberOfAwards":
       case "ModificationNumber":
         $tempData = $this->convertNumber($this->data[$key]);
-        return "'{$tempData}'";
+        return $tempData;
         break;
 
       case "EstimatedFunding":
       case "AwardCeiling":
       case "AwardFloor":
         $tempData = $this->convertNumber($this->data[$key]);
-        return "'{$tempData}'";
+        return $tempData;
         break;
 
       default:
