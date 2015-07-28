@@ -77,7 +77,16 @@ function processDataRow($db, $dataRow){
 
       $fo = new FundingOpportunity($dataRow);
 
-      $query = "INSERT INTO fundingopportunity(
+    /* VALUES ('12/30/2015', 10, 'G;CA', 'AG;AR',
+          'othercategoryexplanation-prab', 10, 111111.11, 22222.22,
+          3333.33, 'agencymailingaddress', 'New FO 08', 'DHS-15-MT-082-01-02',
+          '01/31/2015', 'test', '03/31/2015',
+          'location', 'OCO NDGRANTS 02', 'Department of Homeland Security - FEMA', 'test', '97.082',
+          '00;01', 'Not Available', 'N',
+          'News', 'http://www.cnn.com', 'Salman Arshad&lt;br/&gt;Tester&lt;br/&gt;Phone 123456789', 'sarshad@dminc.com',
+          'Contact');*/
+
+        $query = "INSERT INTO fundingopportunity(
             postdate, modificationnumber, fundinginstrumenttype, fundingactivitycategory,
             othercategoryexplanation, numberofawards, estimatedfunding, awardceiling,
             awardfloor, agencymailingaddress, fundingopptitle, fundingoppnumber,
@@ -86,14 +95,6 @@ function processDataRow($db, $dataRow){
             eligibilitycategory, additionaleligibilityinfo, costsharing,
             obtainfundingopptext, fundingoppurl, agencycontact, agencyemailaddress,
             agencyemaildescriptor)
-      /* VALUES ('12/30/2015', 10, 'G;CA', 'AG;AR',
-            'othercategoryexplanation-prab', 10, 111111.11, 22222.22,
-            3333.33, 'agencymailingaddress', 'New FO 08', 'DHS-15-MT-082-01-02',
-            '01/31/2015', 'test', '03/31/2015',
-            'location', 'OCO NDGRANTS 02', 'Department of Homeland Security - FEMA', 'test', '97.082',
-            '00;01', 'Not Available', 'N',
-            'News', 'http://www.cnn.com', 'Salman Arshad&lt;br/&gt;Tester&lt;br/&gt;Phone 123456789', 'sarshad@dminc.com',
-            'Contact');*/
         VALUES ($fo->getFormattedData('PostDate'), $fo->getFormattedData('ModificationNumber'), $fo->getFormattedData('FundingInstrumentType'), $fo->getFormattedData('FundingActivityCategory'),
                 $fo->getFormattedData('OtherCategoryExplanation'), $fo->getFormattedData('NumberOfAwards'), $fo->getFormattedData('EstimatedFunding'), $fo->getFormattedData('AwardCeiling'),
                 $fo->getFormattedData('AwardFloor'), $fo->getFormattedData('AgencyMailingAddress'), $fo->getFormattedData('FundingOppTitle'), $fo->getFormattedData('FundingOppNumber'),
