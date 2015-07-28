@@ -1,37 +1,84 @@
 <?php
 
-/*
-  $zip = new ZipArchive;
-  if ($zip->open('test.zip') === TRUE) {
-    $zip->extractTo('/my/destination/dir/');
-    $zip->close();
-    echo 'ok';
-  } else {
-    echo 'failed';
+if($_GET['errors'] = 'true'){
+  error_reporting(E_ALL);
+  ini_set('display_errors',1);
+}
+
+foreach (new DirectoryIterator(($_SERVER['DOCUMENT_ROOT'] . '/files/working')) as $fileInfo) {
+  if(!$fileInfo->isDot()) {
+    unlink($fileInfo->getPathname());
   }
+}
 
-  // Tweak some PHP configurations
-  ini_set('memory_limit','1536M'); // 1.5 GB
-  ini_set('max_execution_time', 18000); // 5 hours
-*/
-error_reporting(E_ALL);
-ini_set('display_errors',1);
+//Download today file
+$todayDate = date('Ymd');
+$todayFile = "GrantsDBExtract{$todayDate}";
+$xmlUrl = "http://training.grants.gov/web/grants/xml-extract.html?p_p_id=xmlextract_WAR_grantsxmlextractportlet_INSTANCE_5NxW0PeTnSUa&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_cacheability=cacheLevelPage&p_p_col_id=column-1&p_p_col_pos=1&p_p_col_count=2&download={$todayFile}.zip";
 
-$xmlFile = ($_SERVER['DOCUMENT_ROOT'] . '/files/working/GrantsDBExtract20150727.xml');
+//die($xmlUrl );
+
+
+function collect_file($url){
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, $url);
+  curl_setopt($ch, CURLOPT_VERBOSE, 1);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($ch, CURLOPT_AUTOREFERER, false);
+  curl_setopt($ch, CURLOPT_REFERER, "http://www.xcontest.org");
+  curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+  curl_setopt($ch, CURLOPT_HEADER, 0);
+  $result = curl_exec($ch);
+  curl_close($ch);
+  return($result);
+}
+
+function write_to_file($text,$new_filename){
+  $fp = fopen($new_filename, 'w');
+  fwrite($fp, $text);
+  fclose($fp);
+}
+// start loop here
+
+$xmlZipFile = ($_SERVER['DOCUMENT_ROOT'] . '/files/working/GrantsDBExtract.zip');
+$temp_file_contents = collect_file($xmlUrl);
+write_to_file($temp_file_contents, $xmlZipFile);
+//return;
+// end loop here
+
+
+$xmlExtractDir = ($_SERVER['DOCUMENT_ROOT'] . '/files/working');
+$zip = new ZipArchive;
+if ($zip->open($xmlZipFile) === TRUE) {
+  $zip->extractTo($xmlExtractDir);
+  $zip->close();
+  echo 'ok';
+} else {
+  echo 'failed';
+}
+
+// Tweak some PHP configurations
+//  ini_set('memory_limit','1536M'); // 1.5 GB
+//  ini_set('max_execution_time', 18000); // 5 hours
+
+
+
+$xmlExtractFile = "{$xmlExtractDir}/{$todayFile}.xml";//($_SERVER['DOCUMENT_ROOT'] . '/files/working/GrantsDBExtract20150727_orig.xml');
 try{
   // Open the XML
   echo ('TEST FROM HEROKU' . $_SERVER['DOCUMENT_ROOT']);
 
   //print_r(get_loaded_extensions());
-  $handle = fopen($xmlFile, 'r');
 
-  if (!file_exists($xmlFile)) {
-      print 'File does not exist'; return;
+  if (!file_exists($xmlExtractFile)) {
+    print 'File does not exist'; return;
+  }else {
+    print "File {$xmlExtractFile} exists";
   }
-  //return;
+  // return;
 
 
-
+  $handle = fopen($xmlExtractFile, 'r');
   // Get the nodestring incrementally from the xml file by defining a callback
   // In this case using a anon function.
   nodeStringFromXMLFile($handle, '<FundingOppSynopsis>', '</FundingOppSynopsis>', function($nodeText){
@@ -74,6 +121,7 @@ function nodeStringFromXMLFile($handle, $startNode, $endNode, $callback=null) {
     // Read the data
     $data = fread($handle, ($endPos-$startPos));
     // pass the $data into the callback
+    // if(!empty($data))
     $callback($data);
     // next iteration starts reading from here
     $cursorPos = ftell($handle);
