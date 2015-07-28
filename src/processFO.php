@@ -68,7 +68,7 @@ try{
   print ('Exception >>>>>>>>>>>>' . $e);
 }
 
-include_once($_SERVER['DOCUMENT_ROOT'] . '/src/FundingOpportunity.php');
+require_once($_SERVER['DOCUMENT_ROOT'] . '/src/FundingOpportunity.php');
 
 function processDataRow($db, $dataRow){
   try{
