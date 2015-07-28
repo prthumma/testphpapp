@@ -95,7 +95,7 @@ function processDataRow($db, $dataRow){
             eligibilitycategory, additionaleligibilityinfo, costsharing,
             obtainfundingopptext, fundingoppurl, agencycontact, agencyemailaddress,
             agencyemaildescriptor)
-        VALUES ($fo->getFormattedData('PostDate'), $fo->getFormattedData('ModificationNumber'), $fo->getFormattedData('FundingInstrumentType'), $fo->getFormattedData('FundingActivityCategory'),
+        VALUES ({$fo->getFormattedData('PostDate')}, $fo->getFormattedData('ModificationNumber'), $fo->getFormattedData('FundingInstrumentType'), $fo->getFormattedData('FundingActivityCategory'),
                 $fo->getFormattedData('OtherCategoryExplanation'), $fo->getFormattedData('NumberOfAwards'), $fo->getFormattedData('EstimatedFunding'), $fo->getFormattedData('AwardCeiling'),
                 $fo->getFormattedData('AwardFloor'), $fo->getFormattedData('AgencyMailingAddress'), $fo->getFormattedData('FundingOppTitle'), $fo->getFormattedData('FundingOppNumber'),
                 $fo->getFormattedData('ApplicationsDueDate'), $fo->getFormattedData('ApplicationsDueDateExplanation'), $fo->getFormattedData('ArchiveDate'),
