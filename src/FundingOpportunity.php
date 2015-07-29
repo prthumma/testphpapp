@@ -61,7 +61,11 @@ class FundingOpportunity{
           AgencyEmailAddress              varchar(80),
           AgencyEmailDescriptor           varchar(100)
         */
-        $tempData = ($this->data[$key] ? pg_escape_string($this->db, $this->data[$key]) : null);
+        $d = $this->data[$key];
+        if(is_array($d)){
+          $d = implode('&&&', $d);
+        }
+        $tempData = ($d ? pg_escape_string($this->db, $d) : null);
         return $tempData ? "'{$tempData}'" : "NULLIF('','')::varchar";
         break;
     }
