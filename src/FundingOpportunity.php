@@ -3,9 +3,11 @@
 class FundingOpportunity{
 
   private $data = array();
+  private $db = null;
 
-  public function __construct($data){
+  public function __construct($data, $db){
     $this->data = $data;
+    $this->db = $db;
   }
 
   public function getFormattedData($key){
@@ -59,7 +61,7 @@ class FundingOpportunity{
           AgencyEmailAddress              varchar(80),
           AgencyEmailDescriptor           varchar(100)
         */
-        $tempData = ($this->data[$key] ? pg_escape_string($this->data[$key]) : null);
+        $tempData = ($this->data[$key] ? pg_escape_string($this->db, $this->data[$key]) : null);
         return $tempData ? "'{$tempData}'" : "NULLIF('','')::varchar";
         break;
     }

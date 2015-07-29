@@ -75,7 +75,7 @@ try{
 function processDataRow($db, $dataRow){
   try{
 
-      $fo = new FundingOpportunity($dataRow);
+      $fo = new FundingOpportunity($dataRow, $db);
       $foNumber = $dataRow['FundingOppNumber'];
       if(empty($foNumber)){
         return;
