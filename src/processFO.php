@@ -121,7 +121,8 @@ function processDataRow($db, $dataRow){
       //print $query;
       pg_query($db, $query);
   }catch (Exception $e){
-    print $e;
+    print ('QUERY>>>' . $query);
+    print ('Exception>>>' . $e);
   }
 
 }
