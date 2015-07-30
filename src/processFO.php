@@ -1,130 +1,109 @@
 <?php
 
-require_once($_SERVER['DOCUMENT_ROOT'] . '/src/FundingOpportunity.php');
+require_once($_SERVER['DOCUMENT_ROOT'] . 'src/FundingOpportunity.php');
+fileLog('Started processing Funding opportunities from Grants.gov');
+$timeStart = gettimeofday();
 
 //set this if you need to see errors
-if($_GET['errors'] == 'true'){
+if(isset($_GET['errors']) && $_GET['errors'] == 'true'){
   error_reporting(E_ALL);
   ini_set('display_errors',1);
 }
 
 // Tweak some PHP configurations if needed
 //  ini_set('memory_limit','1536M'); // 1.5 GB
-ini_set('max_execution_time', 300); // 5 min
+//ini_set('max_execution_time', 900); // 5 min
+set_time_limit(0);
 
 //clean up working directory
-foreach (new DirectoryIterator(($_SERVER['DOCUMENT_ROOT'] . '/files/working')) as $fileInfo) {
+foreach (new DirectoryIterator(($_SERVER['DOCUMENT_ROOT'] . 'files/working')) as $fileInfo) {
   if(!$fileInfo->isDot()) {
     unlink($fileInfo->getPathname());
   }
 }
-
+fileLog('Cleaned up directory '. ($_SERVER['DOCUMENT_ROOT'] . 'files/working'));
 //Download today file
 $todayDate = date('Ymd');
 $todayFile = "GrantsDBExtract{$todayDate}";
 $xmlUrl = "http://www.grants.gov/web/grants/xml-extract.html?p_p_id=xmlextract_WAR_grantsxmlextractportlet_INSTANCE_5NxW0PeTnSUa&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_cacheability=cacheLevelPage&p_p_col_id=column-1&p_p_col_pos=1&p_p_col_count=2&download={$todayFile}.zip";
-$xmlZipFile = ($_SERVER['DOCUMENT_ROOT'] . "/files/working/{$todayFile}.zip");
+$xmlZipFile = ($_SERVER['DOCUMENT_ROOT'] . "files/working/{$todayFile}.zip");
 $temp_file_contents = collect_file($xmlUrl);
 write_to_file($temp_file_contents, $xmlZipFile);
-
+fileLog("Downloaded file from {$xmlUrl}");
 //unzip the file
-$xmlExtractDir = ($_SERVER['DOCUMENT_ROOT'] . '/files/working');
+$xmlExtractDir = ($_SERVER['DOCUMENT_ROOT'] . 'files/working');
 $zip = new ZipArchive;
 if ($zip->open($xmlZipFile) === TRUE) {
   $zip->extractTo($xmlExtractDir);
   $zip->close();
-  echo 'ok. File Extracted';
+  fileLog("File Extracted {$xmlExtractedFile}");
 } else {
-  echo 'failed';
+  fileLog("File Extraction failed.");
   return;
 }
 
-
 $xmlExtractedFile = "{$xmlExtractDir}/{$todayFile}.xml";
+
+global $fo, $element, $elementParsed, $elements;
+
 try{
 
   if (!file_exists($xmlExtractedFile)) {
-    print 'File does not exist'; return;
+    print " File does not exist {$xmlExtractedFile}"; return;
+    fileLog("File {$xmlExtractedFile} does not exist."); return;
   }else {
-    print "File {$xmlExtractedFile} exists";
+    fileLog("Extracted Downloaded file {$xmlExtractedFile}");
   }
 
-  $handle = fopen($xmlExtractedFile, 'r');
-  //$dataRows = array();
-  $db = pg_connect(getenv('DATABASE_URL'));
-  if (!$db) {
-    echo "Database connection error.";
-    exit;
-  }
-  // Get the nodestring incrementally from the xml file by defining a callback
-  // In this case using a anon function.
-  nodeStringFromXMLFile($handle, '<FundingOppSynopsis>', '</FundingOppSynopsis>', function($nodeText, $db){
-    // Transform the XMLString into an array and
-    $dataRow = getArrayFromXMLString($nodeText);
-    processDataRow($db, $dataRow);
-  }, $db);
+  setDBConn();
 
-  fclose($handle);
+  $elements = array('PostDate','ModificationNumber','FundingInstrumentType','FundingActivityCategory',
+                    'OtherCategoryExplanation','NumberOfAwards','EstimatedFunding','AwardCeiling',
+                    'AwardFloor','AgencyMailingAddress','FundingOppTitle','FundingOppNumber',
+                    'ApplicationsDueDate','ApplicationsDueDateExplanation','ArchiveDate',
+                    'Location','Office','Agency','FundingOppDescription','CFDANumber',
+                    'EligibilityCategory','AdditionalEligibilityInfo','CostSharing',
+                    'ObtainFundingOppText','FundingOppURL','AgencyContact','AgencyEmailAddress',
+                    'AgencyEmailDescriptor');
+
+
+  // Creates a new XML parser and returns a resource handle referencing it to be used by the other XML functions.
+  $parser = xml_parser_create();
+
+  xml_set_element_handler($parser, "startElements", "endElements");
+  xml_set_character_data_handler($parser, "characterData");
+  //xml_parser_set_option ($parser , XML_OPTION_TARGET_ENCODING , 'UTF-8' );
+  xml_parser_set_option($parser, XML_OPTION_TARGET_ENCODING, "US-ASCII");
+  xml_parser_set_option ($parser , XML_OPTION_CASE_FOLDING , 0 );
+
+// open xml file
+  if (!($handle = fopen($xmlExtractedFile, "r"))){
+    die("could not open XML input");
+  }
+
+  while($data = fread($handle, 4096)) // read xml file
+  {
+    xml_parse($parser, $data, feof($handle));  // start parsing an xml document
+  }
+
+  xml_parser_free($parser); // deletes the parser
+
+
+
+  closeDBConn();
+
+  $end = gettimeofday();
+  $totalTime = ($end['sec'] - $timeStart['sec']);
+  fileLog("Total Time take to process: {$totalTime} sec.");
+  fileLog("Completed processing the file.");
 
 }catch (Exception $e){
-  print ('Exception >>>>>>>>>>>>' . $e);
-}
+  fileLog('Exception >>>>>>>>>>>>' . $e);
+  closeDBConn();
 
-
-
-function processDataRow($db, $dataRow){
-  try{
-
-      $fo = new FundingOpportunity($dataRow, $db);
-      $foNumber = $dataRow['FundingOppNumber'];
-      if(empty($foNumber)){
-        return;
-      }
-
-      $result = pg_query($db, "SELECT id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}'");
-      $rows = pg_num_rows($result);
-      if($rows == 0 ){
-        $query = "INSERT INTO fundingopportunity(
-            postdate, modificationnumber, fundinginstrumenttype, fundingactivitycategory,
-            othercategoryexplanation, numberofawards, estimatedfunding, awardceiling,
-            awardfloor, agencymailingaddress, fundingopptitle, fundingoppnumber,
-            applicationsduedate, applicationsduedateexplanation, archivedate,
-            location, office, agency, fundingoppdescription, cfdanumber,
-            eligibilitycategory, additionaleligibilityinfo, costsharing,
-            obtainfundingopptext, fundingoppurl, agencycontact, agencyemailaddress,
-            agencyemaildescriptor)
-        VALUES ({$fo->getFormattedData('PostDate')}, {$fo->getFormattedData('ModificationNumber')}, {$fo->getFormattedData('FundingInstrumentType')}, {$fo->getFormattedData('FundingActivityCategory')},
-                {$fo->getFormattedData('OtherCategoryExplanation')}, {$fo->getFormattedData('NumberOfAwards')}, {$fo->getFormattedData('EstimatedFunding')}, {$fo->getFormattedData('AwardCeiling')},
-                {$fo->getFormattedData('AwardFloor')}, {$fo->getFormattedData('AgencyMailingAddress')}, {$fo->getFormattedData('FundingOppTitle')}, {$fo->getFormattedData('FundingOppNumber')},
-                {$fo->getFormattedData('ApplicationsDueDate')}, {$fo->getFormattedData('ApplicationsDueDateExplanation')}, {$fo->getFormattedData('ArchiveDate')},
-                {$fo->getFormattedData('Location')}, {$fo->getFormattedData('Office')}, {$fo->getFormattedData('Agency')}, {$fo->getFormattedData('FundingOppDescription')}, {$fo->getFormattedData('CFDANumber')},
-                {$fo->getFormattedData('EligibilityCategory')}, {$fo->getFormattedData('AdditionalEligibilityInfo')}, {$fo->getFormattedData('CostSharing')},
-                {$fo->getFormattedData('ObtainFundingOppText')}, {$fo->getFormattedData('FundingOppURL')}, {$fo->getFormattedData('AgencyContact')}, {$fo->getFormattedData('AgencyEmailAddress')},
-                {$fo->getFormattedData('AgencyEmailDescriptor')});";
-      }else{
-        $query = "UPDATE fundingopportunity
-            set postdate = {$fo->getFormattedData('PostDate')}, modificationnumber = {$fo->getFormattedData('ModificationNumber')},
-            fundinginstrumenttype = {$fo->getFormattedData('FundingInstrumentType')}, fundingactivitycategory = {$fo->getFormattedData('FundingActivityCategory')},
-            othercategoryexplanation = {$fo->getFormattedData('OtherCategoryExplanation')}, numberofawards = {$fo->getFormattedData('NumberOfAwards')},
-            estimatedfunding = {$fo->getFormattedData('EstimatedFunding')}, awardceiling = {$fo->getFormattedData('AwardCeiling')},
-            awardfloor = {$fo->getFormattedData('AwardFloor')}, agencymailingaddress  = {$fo->getFormattedData('AgencyMailingAddress')},
-            fundingopptitle = {$fo->getFormattedData('FundingOppTitle')}, applicationsduedate = {$fo->getFormattedData('ApplicationsDueDate')},
-            applicationsduedateexplanation = {$fo->getFormattedData('ApplicationsDueDateExplanation')}, archivedate = {$fo->getFormattedData('ArchiveDate')},
-            location = {$fo->getFormattedData('Location')}, office = {$fo->getFormattedData('Office')}, agency = {$fo->getFormattedData('Agency')},
-            fundingoppdescription = {$fo->getFormattedData('FundingOppDescription')}, cfdanumber = {$fo->getFormattedData('CFDANumber')},
-            eligibilitycategory = {$fo->getFormattedData('EligibilityCategory')}, additionaleligibilityinfo = {$fo->getFormattedData('AdditionalEligibilityInfo')},
-            costsharing = {$fo->getFormattedData('CostSharing')}, obtainfundingopptext = {$fo->getFormattedData('ObtainFundingOppText')}, fundingoppurl = {$fo->getFormattedData('FundingOppURL')},
-            agencycontact = {$fo->getFormattedData('AgencyContact')}, agencyemailaddress = {$fo->getFormattedData('AgencyEmailAddress')}, agencyemaildescriptor = {$fo->getFormattedData('AgencyEmailDescriptor')},
-            lastmodifieddate = now()
-            WHERE fundingoppnumber = {$fo->getFormattedData('FundingOppNumber')}";
-      }
-      //print $query;
-      pg_query($db, $query);
-  }catch (Exception $e){
-    print ('QUERY>>>' . $query);
-    print ('Exception>>>' . $e);
-  }
-
+  $end = gettimeofday();
+  $totalTime = ($end['sec'] - $timeStart['sec']);
+  fileLog("Exception: Total Time take to process: {$totalTime} ms");
 }
 
 function collect_file($url){
@@ -147,125 +126,94 @@ function write_to_file($text, $new_filename){
   fclose($fp);
 }
 
-/**
- * For every node that starts with $startNode and ends with $endNode call $callback
- * with the string as an argument
- *
- * Note: Sometimes it returns two nodes instead of a single one, this could easily be
- * handled by the callback though. This function primary job is to split a large file
- * into manageable XML nodes.
- *
- * the callback will receive one parameter, the XML node(s) as a string
- *
- * @param resource $handle - a file handle
- * @param string $startNode - what is the start node name e.g <item>
- * @param string $endNode - what is the end node name e.g </item>
- * @param callable $callback - an anonymous function
- */
-function nodeStringFromXMLFile($handle, $startNode, $endNode, $callback=null, $db) {
-  $cnt = 0;
-  $cursorPos = 0;
-  while(true) {
-    // Find start position
-    $startPos = getPos($handle, $startNode, $cursorPos);
-    // We reached the end of the file or an error
-    if($startPos === false) {
-      break;
-    }
-    // Find where the node ends
-    $endPos = getPos($handle, $endNode, $startPos) + strlen($endNode);
-    // Jump back to the start position
-    fseek($handle, $startPos);
-    // Read the data
-    $data = fread($handle, ($endPos-$startPos));
-    // pass the $data into the callback
-    if(!empty($data))
-      $callback($data, $db);
-    // next iteration starts reading from here
+// Called to this function when tags are opened
+function startElements($parser, $name, $attrs)
+{
+  /*echo "\nSTART - {$name}\n";
+  print_r($attrs);
+  echo "\n";*/
+  global $fo, $element, $elementParsed;
 
-    /*$cnt++;
-    if($cnt > 0){
-      return;
-    }*/
-    $cursorPos = ftell($handle);
+  if(!empty($name))
+  {
+    if ($name == 'FundingOppModSynopsis' || $name == 'FundingOppSynopsis') {
+      $fo = new FundingOpportunity();
+    }
+
+    $element = $name;
+    $elementParsed[$element] = 'N';
+    //print_r($elementParsed);
   }
 }
 
-/**
- * This function will return the first string it could find in a resource that matches the $string.
- *
- * By using a $startFrom it recurses and seeks $chunk bytes at a time to avoid reading the
- * whole file at once.
- *
- * @param resource $handle - typically a file handle
- * @param string $string - what string to search for
- * @param int $startFrom - strpos to start searching from
- * @param int $chunk - chunk to read before rereading again
- * @return int|bool - Will return false if there are EOL or errors
- */
-function getPos($handle, $string, $startFrom=0, $chunk=1024, $prev='') {
-  // Set the file cursor on the startFrom position
-  fseek($handle, $startFrom, SEEK_SET);
-  // Read data
-  $data = fread($handle, $chunk);
-  // Try to find the search $string in this chunk
-  $stringPos = strpos($prev.$data, $string);
-  // We found the string, return the position
-  if($stringPos !== false ) {
-    return $stringPos+$startFrom - strlen($prev);
+// Called to this function when tags are closed
+function endElements($parser, $name)
+{ //echo "\nEND - {$name}";
+  global $fo, $db, $element, $elementParsed;
+  if(!empty($name))
+  {
+    $elementParsed[$element] = 'Y';
+    if ($name == 'FundingOppModSynopsis' || $name == 'FundingOppSynopsis') {
+      if(is_object($fo)){
+        resetDBConn();
+        $fo->processData($db);
+      }
+    }
   }
-  // We reached the end of the file
-  if(feof($handle)) {
-    return false;
-  }
-  // Recurse to read more data until we find the search $string it or run out of disk
-  return getPos($handle, $string, $chunk+$startFrom, $chunk, $data);
 }
 
-/**
- * Turn a string version of XML and turn it into an array by using the
- * SimpleXML
- *
- * @param string $nodeAsString - a string representation of a XML node
- * @return array
- */
-function getArrayFromXMLString($nodeAsString) {
-  $simpleXML = simplexml_load_string($nodeAsString);
-  if(libxml_get_errors()) {
-    user_error('Libxml throws some errors.', implode(',', libxml_get_errors()));
+function resetDBConn(){
+  global $db, $dbConnStartTime;
+
+  $dbConnEndTime = gettimeofday();
+  $totalTime = ($dbConnEndTime['sec'] - $dbConnStartTime['sec']);
+  if(($totalTime / 60) > 2){
+    fileLog("Closing current database connection after {$totalTime} seconds");
+    closeDBConn();
+    fileLog("Getting new database connection");
+    setDBConn();
   }
-  return simplexml2array($simpleXML);
 }
 
-/**
- * Turns a SimpleXMLElement into an array
- *
- * @param SimpleXMLelem $xml
- * @return array
- */
-function simplexml2array($xml) {
-  if(is_object($xml) && get_class($xml) == 'SimpleXMLElement') {
-    $attributes = $xml->attributes();
-    foreach($attributes as $k=>$v) {
-      $a[$k] = (string) $v;
-    }
-    $x = $xml;
-    $xml = get_object_vars($xml);
+function setDBConn(){
+  global $db, $dbConnStartTime;
+
+  $dbConnStartTime = gettimeofday();
+
+  $db = pg_connect(getenv('DATABASE_URL'));//postgresql
+  //$db = mysql_connect('localhost:3306', 'root', '') or die("Unable to connect to MySQL");//mysql
+  //$selected = mysql_select_db("performance_1204",$db) or die("Could not select examples");//mysql
+
+  if (!$db) {
+    fileLog("Database connection error."); exit;
   }
 
-  if(is_array($xml)) {
-    if(count($xml) == 0) {
-      return (string) $x;
-    }
-    $r = array();
-    foreach($xml as $key=>$value) {
-      $r[$key] = simplexml2array($value);
-    }
-    // Ignore attributes
-    if (isset($a)) {
-      $r['@attributes'] = $a;
-    }
-    return $r;
+  fileLog("Got the database connection");
+}
+
+function closeDBConn(){
+  global $db;
+
+  if($db){
+    pg_close($db);
+    //mysql_close($db);//mysql
   }
-  return (string) $xml;
+}
+
+// Called on the text between the start and end of the tags
+function characterData($parser, $data)
+{
+  global $fo, $element, $elementParsed, $elements;
+ //echo ">>>>>>>>>.element>>>>{$element}";
+  if($elementParsed[$element] == 'N'){
+    //echo "\nDATA -> {$element} = {$data}";
+    if (in_array($element, $elements))
+    {
+      $fo->setData($element, htmlspecialchars($data));
+    }
+  }
+}
+
+function fileLog($message){
+  error_log($message);
 }
