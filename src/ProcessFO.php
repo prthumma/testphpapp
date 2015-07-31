@@ -196,6 +196,7 @@ function closeDBConn(){
   if($db){
     pg_close($db);
     //mysql_close($db);//mysql
+    $db = null;
   }
 }
 
