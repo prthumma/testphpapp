@@ -49,8 +49,7 @@ global $fo, $element, $elementParsed, $elements;
 try{
 
   if (!file_exists($xmlExtractedFile)) {
-    print " File does not exist {$xmlExtractedFile}"; return;
-    fileLog("File {$xmlExtractedFile} does not exist."); return;
+    fileLog("File {$xmlExtractedFile} does not exist."); exit;
   }else {
     fileLog("Extracted Downloaded file {$xmlExtractedFile}");
   }
