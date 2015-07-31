@@ -36,7 +36,7 @@ $zip = new ZipArchive;
 if ($zip->open($xmlZipFile) === TRUE) {
   $zip->extractTo($xmlExtractDir);
   $zip->close();
-  fileLog("File Extracted {$xmlExtractedFile}");
+  fileLog("File Extracted.");
 } else {
   fileLog("File Extraction failed.");
   return;
