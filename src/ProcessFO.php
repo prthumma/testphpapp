@@ -174,9 +174,9 @@ function setDBConn(){
 
   $dbConnStartTime = gettimeofday();
 
-  //$db = pg_connect(getenv('DATABASE_URL'));//postgresql
-  $db = mysql_connect('localhost:3306', 'root', '') or die("Unable to connect to MySQL");//mysql
-  $selected = mysql_select_db("performance_1204",$db) or die("Could not select examples");//mysql
+  $db = pg_connect(getenv('DATABASE_URL'));//postgresql
+  //$db = mysql_connect('localhost:3306', 'root', '') or die("Unable to connect to MySQL");//mysql
+  //$selected = mysql_select_db("performance_1204",$db) or die("Could not select examples");//mysql
 
   if (!$db) {
     fileLog("Database connection error."); exit;
@@ -189,8 +189,8 @@ function closeDBConn(){
   global $db;
 
   if($db){
-    //pg_close($db);//postgresql
-    mysql_close($db);//mysql
+    pg_close($db);//postgresql
+    //mysql_close($db);//mysql
     $db = null;
     fileLog('Closed DB Connection.');
   }

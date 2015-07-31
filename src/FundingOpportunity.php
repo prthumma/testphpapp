@@ -28,8 +28,8 @@ class FundingOpportunity{
       case "ApplicationsDueDate":
       case "ArchiveDate":
         $tempData = $this->formatDate($data);
-        //return $tempData ? "'{$tempData}'" : "NULLIF('','')::date";//postgresql
-        return $tempData ? "'{$tempData}'" : "NULL";//mysql
+        return $tempData ? "'{$tempData}'" : "NULLIF('','')::date";//postgresql
+        //return $tempData ? "'{$tempData}'" : "NULL";//mysql
         break;
 
       case "FundingActivityCategory":
@@ -43,16 +43,16 @@ class FundingOpportunity{
       case "NumberOfAwards":
       case "ModificationNumber":
         $tempData = $this->convertNumber($data);
-        //return $tempData ? $tempData : "NULLIF('','')::integer";//postgresql
-        return $tempData ? "'{$tempData}'" : "NULL";//mysql
+        return $tempData ? $tempData : "NULLIF('','')::integer";//postgresql
+        //return $tempData ? "'{$tempData}'" : "NULL";//mysql
         break;
 
       case "EstimatedFunding":
       case "AwardCeiling":
       case "AwardFloor":
         $tempData = $this->convertNumber($data);
-        //return $tempData ? $tempData : "cast(NULLIF('','') as double precision)";//postgresql
-        return $tempData ? "'{$tempData}'" : "NULL";//mysql
+        return $tempData ? $tempData : "cast(NULLIF('','') as double precision)";//postgresql
+        //return $tempData ? "'{$tempData}'" : "NULL";//mysql
         break;
 
       default:
@@ -75,11 +75,11 @@ class FundingOpportunity{
           $d = $data;
         }
 
-        //$tempData = ($d ? pg_escape_string($this->db, $d) : null);//postgresql
-        //return $tempData ? "'{$tempData}'" : "NULLIF('','')::varchar";//postgresql
+        $tempData = ($d ? pg_escape_string($this->db, $d) : null);//postgresql
+        return $tempData ? "'{$tempData}'" : "NULLIF('','')::varchar";//postgresql
 
-        $tempData = ($d ? mysql_real_escape_string ( $d, $this->db) : null);//mysql
-        return $tempData ? "'{$tempData}'" : "NULL";//mysql
+        //$tempData = ($d ? mysql_real_escape_string ( $d, $this->db) : null);//mysql
+        //return $tempData ? "'{$tempData}'" : "NULL";//mysql
         break;
     }
   }
@@ -125,11 +125,11 @@ class FundingOpportunity{
         return;
       }
 
-      //$result = pg_query($db, "SELECT id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}'");//postgresql
-      //$rows = pg_num_rows($result);//postgresql
+      $result = pg_query($db, "SELECT id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}'");//postgresql
+      $rows = pg_num_rows($result);//postgresql
 
-      $result = mysql_query("SELECT Id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}'", $this->db);//mysql
-      $rows = mysql_num_rows($result);//mysql
+      //$result = mysql_query("SELECT Id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}'", $this->db);//mysql
+      //$rows = mysql_num_rows($result);//mysql
 
       if($rows == 0 ){
         $query = "INSERT INTO fundingopportunity(
@@ -168,11 +168,15 @@ class FundingOpportunity{
       }
       // echo $query.'<br/><br/><br/>';
 
-      //pg_query($db, $query);//postgresql
-      $result = mysql_query($query, $this->db);//mysql
+      $result = pg_query($db, $query);//postgresql
+      if(!$result){
+        throw new Exception(pg_errormessage());
+      }
+
+      /*$result = mysql_query($query, $this->db);//mysql
       if(!$result){
         throw new Exception(mysql_error());
-      }
+      }*/
 
     }catch (Exception $e){
       fileLog('QUERY>>>' . $query);
