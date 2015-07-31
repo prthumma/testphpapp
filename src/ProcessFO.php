@@ -4,21 +4,17 @@ require_once($_SERVER['DOCUMENT_ROOT'] . '/src/FundingOpportunity.php');
 fileLog('Started processing Funding opportunities from Grants.gov');
 $timeStart = gettimeofday();
 
-//set this if you need to see errors
 if(isset($_GET['errors']) && $_GET['errors'] == 'true'){
   error_reporting(E_ALL);
   ini_set('display_errors',1);
 }
 
-// Tweak some PHP configurations if needed
-//  ini_set('memory_limit','1536M'); // 1.5 GB
-//ini_set('max_execution_time', 900); // 5 min
 set_time_limit(0);
 
 //clean up working directory
 foreach (new DirectoryIterator(($_SERVER['DOCUMENT_ROOT'] . '/files/working')) as $fileInfo) {
   if(!$fileInfo->isDot()) {
-    unlink($fileInfo->getPathname());
+    //unlink($fileInfo->getPathname());
   }
 }
 fileLog('Cleaned up directory '. ($_SERVER['DOCUMENT_ROOT'] . '/files/working'));
@@ -27,12 +23,12 @@ $todayDate = date('Ymd');
 $todayFile = "GrantsDBExtract{$todayDate}";
 $xmlUrl = "http://www.grants.gov/web/grants/xml-extract.html?p_p_id=xmlextract_WAR_grantsxmlextractportlet_INSTANCE_5NxW0PeTnSUa&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_cacheability=cacheLevelPage&p_p_col_id=column-1&p_p_col_pos=1&p_p_col_count=2&download={$todayFile}.zip";
 $xmlZipFile = ($_SERVER['DOCUMENT_ROOT'] . "/files/working/{$todayFile}.zip");
-$temp_file_contents = collect_file($xmlUrl);
-write_to_file($temp_file_contents, $xmlZipFile);
+/*$temp_file_contents = collect_file($xmlUrl);
+write_to_file($temp_file_contents, $xmlZipFile);*/
 fileLog("Downloaded file from {$xmlUrl}");
 //unzip the file
 $xmlExtractDir = ($_SERVER['DOCUMENT_ROOT'] . '/files/working');
-$zip = new ZipArchive;
+/*$zip = new ZipArchive;
 if ($zip->open($xmlZipFile) === TRUE) {
   $zip->extractTo($xmlExtractDir);
   $zip->close();
@@ -40,7 +36,7 @@ if ($zip->open($xmlZipFile) === TRUE) {
 } else {
   fileLog("File Extraction failed.");
   return;
-}
+}*/
 
 $xmlExtractedFile = "{$xmlExtractDir}/{$todayFile}.xml";
 
@@ -69,25 +65,21 @@ try{
   // Creates a new XML parser and returns a resource handle referencing it to be used by the other XML functions.
   $parser = xml_parser_create();
 
+  xml_parser_set_option($parser, XML_OPTION_TARGET_ENCODING, "UTF-8");
+  xml_parser_set_option ($parser , XML_OPTION_CASE_FOLDING , 0 );
   xml_set_element_handler($parser, "startElements", "endElements");
   xml_set_character_data_handler($parser, "characterData");
-  //xml_parser_set_option ($parser , XML_OPTION_TARGET_ENCODING , 'UTF-8' );
-  xml_parser_set_option($parser, XML_OPTION_TARGET_ENCODING, "US-ASCII");
-  xml_parser_set_option ($parser , XML_OPTION_CASE_FOLDING , 0 );
 
-// open xml file
   if (!($handle = fopen($xmlExtractedFile, "r"))){
     die("could not open XML input");
   }
 
-  while($data = fread($handle, 4096)) // read xml file
+  while($data = fread($handle, 4096))
   {
-    xml_parse($parser, $data, feof($handle));  // start parsing an xml document
+    xml_parse($parser, $data, feof($handle));
   }
 
-  xml_parser_free($parser); // deletes the parser
-
-
+  xml_parser_free($parser);
 
   closeDBConn();
 
@@ -125,13 +117,9 @@ function write_to_file($text, $new_filename){
   fclose($fp);
 }
 
-// Called to this function when tags are opened
 function startElements($parser, $name, $attrs)
 {
-  /*echo "\nSTART - {$name}\n";
-  print_r($attrs);
-  echo "\n";*/
-  global $fo, $element, $elementParsed;
+  global $fo, $element, $elementParsed, $elements;
 
   if(!empty($name))
   {
@@ -139,15 +127,22 @@ function startElements($parser, $name, $attrs)
       $fo = new FundingOpportunity();
     }
 
+    if ($name == 'ObtainFundingOppText' || $name == 'AgencyContact') {
+      if(is_array($attrs)){
+        foreach($attrs as $key => $value){
+          if (is_object($fo) && in_array($element, $elements))
+          {
+            $fo->setData($key, getRawData($value));
+          }
+        }
+      }
+    }
     $element = $name;
     $elementParsed[$element] = 'N';
-    //print_r($elementParsed);
   }
 }
 
-// Called to this function when tags are closed
-function endElements($parser, $name)
-{ //echo "\nEND - {$name}";
+function endElements($parser, $name){
   global $fo, $db, $element, $elementParsed;
   if(!empty($name))
   {
@@ -162,7 +157,7 @@ function endElements($parser, $name)
 }
 
 function resetDBConn(){
-  global $db, $dbConnStartTime;
+  global $dbConnStartTime;
 
   $dbConnEndTime = gettimeofday();
   $totalTime = ($dbConnEndTime['sec'] - $dbConnStartTime['sec']);
@@ -179,9 +174,9 @@ function setDBConn(){
 
   $dbConnStartTime = gettimeofday();
 
-  $db = pg_connect(getenv('DATABASE_URL'));//postgresql
-  //$db = mysql_connect('localhost:3306', 'root', '') or die("Unable to connect to MySQL");//mysql
-  //$selected = mysql_select_db("performance_1204",$db) or die("Could not select examples");//mysql
+  //$db = pg_connect(getenv('DATABASE_URL'));//postgresql
+  $db = mysql_connect('localhost:3306', 'root', '') or die("Unable to connect to MySQL");//mysql
+  $selected = mysql_select_db("performance_1204",$db) or die("Could not select examples");//mysql
 
   if (!$db) {
     fileLog("Database connection error."); exit;
@@ -194,24 +189,33 @@ function closeDBConn(){
   global $db;
 
   if($db){
-    pg_close($db);
-    //mysql_close($db);//mysql
+    //pg_close($db);//postgresql
+    mysql_close($db);//mysql
     $db = null;
+    fileLog('Closed DB Connection.');
   }
 }
 
-// Called on the text between the start and end of the tags
 function characterData($parser, $data)
 {
   global $fo, $element, $elementParsed, $elements;
-  //echo ">>>>>>>>>.element>>>>{$element}";
   if($elementParsed[$element] == 'N'){
-    //echo "\nDATA -> {$element} = {$data}";
     if (in_array($element, $elements))
     {
-      $fo->setData($element, htmlspecialchars($data));
+      $fo->setData($element, getRawData($data));
     }
   }
+}
+
+function getRawData($value){
+  if(!$value){
+    return $value;
+  }
+
+  $value =  htmlentities($value, ENT_NOQUOTES, 'WINDOWS-1252');
+  $value = str_replace('&Acirc;', '', $value);
+  $value = htmlspecialchars_decode($value);
+  return $value;
 }
 
 function fileLog($message){
