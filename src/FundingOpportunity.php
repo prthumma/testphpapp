@@ -38,6 +38,7 @@ class FundingOpportunity{
       case "FundingActivityCategory":
       case "FundingInstrumentType":
       case "EligibilityCategory":
+      case "CFDANumber":
         $tempData = $this->convertCodes($data);
         return "'{$tempData}'";
         break;
@@ -57,73 +58,22 @@ class FundingOpportunity{
         //return $tempData ? "'{$tempData}'" : "NULL";//mysql
         break;
 
-      case "FundingOppDescription":
-      case "AgencyContact":
-        $d = null;
-        if(is_array($data)){
-
-          $val = false;
-          foreach($data as $key1 => $value){
-            if(is_array($value)){
-              $val = true;
-            }
-          }
-          if($val){
-            /*echo ("<br/>". "key->{$key}");
-            print_r($data);
-            print_r($this->data);
-            echo "**";*/
-          }
-
-          $d = implode('', $data);
-        }else{
-          $d = $data;
-        }
-        $tempData = ($d ? pg_escape_string($this->db, $d) : null);//postgresql
-        return $tempData ? "'{$tempData}'" : "NULLIF('','')::varchar";//postgresql
-
-        //$tempData = ($d ? mysql_real_escape_string ( $d, $this->db) : null);//mysql
-        //return $tempData ? "'{$tempData}'" : "NULL";//mysql
-        break;
       default:
-        /*
-          OtherCategoryExplanation
-          AgencyMailingAddress
-          FundingOppTitle
-          FundingOppNumber
-          ApplicationsDueDateExplanation
-          Location
-          Office
-          Agency
-
-          CFDANumber
-          AdditionalEligibilityInfo
-          CostSharing
-          ObtainFundingOppText
-
-
-
-          FundingOppURL                   varchar(250),
-          AgencyEmailAddress              varchar(80),
-          AgencyEmailDescriptor           varchar(100)
-        */
         $d = null;
         if(is_array($data)){
-
-          $val = false;
+          $d = implode('', $data);
+          /*$val = false;
           foreach($data as $key1 => $value){
             if(is_array($value)){
               $val = true;
             }
           }
-          if($val){
-            /*echo ("<br/>". "key->{$key}");
-            print_r($data);
-            print_r($this->data);
-            echo "**";*/
-          }
-
-          $d = implode('###', $data);
+         if($val){
+           echo ("<br/>". "key->{$key}");
+           print_r($data);
+           print_r($this->data);
+           echo "**";
+         }*/
         }else{
           $d = $data;
         }
