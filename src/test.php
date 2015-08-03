@@ -1,6 +1,8 @@
 <?php
 error_log('test.php....1');
-require ('../vendor/autoload.php');
+//require_once ('../vendor/autoload.php');
+require_once ($_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php');
+
 error_log('test.php....2');
 if($_GET['errors'] == 'true'){
   error_reporting(E_ALL);
@@ -36,7 +38,7 @@ try{
   }*/
 
 
-  $sendgrid = new SendGrid('imkt7foa4635', 'app35717248@heroku.com');
+  $sendgrid = new SendGrid('app35717248@heroku.com', 'imkt7foa4635');
 
   error_log('test.php....4');
 
@@ -53,7 +55,7 @@ try{
   error_log('test.php....6');
 
   $response = $sendgrid->send($message);
-echo "sent email".$response;
+echo "sent email";
   error_log('test.php....7');
 }catch (Exception $e){
   error_log('test.php....8');
