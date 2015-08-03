@@ -1,12 +1,14 @@
 <?php
 
+require 'vendor/autoload.php';
+
 if($_GET['errors'] == 'true'){
   error_reporting(E_ALL);
   ini_set('display_errors',1);
 }
 
 try{
-  $db = pg_connect(getenv('DATABASE_URL'));
+  /*$db = pg_connect(getenv('DATABASE_URL'));
   if (!$db) {
       echo "Database connection error.";
       exit;
@@ -31,7 +33,19 @@ try{
 
     $result = pg_query($db, $query);
     print $result;
-  }
+  }*/
+
+
+  $sendgrid = new SendGrid('imkt7foa4635', 'app35717248@heroku.com');
+
+  $message = new SendGrid\Email();
+  $message->addTo('preddy@reisystems.com')->
+    setFrom('preddy@reisystems.com')->
+    setSubject('test subject from heroku')->
+    setText('test message from heroku')->
+    setHtml('<strong>Hello World!</strong>');
+  $response = $sendgrid->send($message);
+
 }catch (Exception $e){
   print $e;
 }
