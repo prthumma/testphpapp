@@ -1,7 +1,7 @@
 <?php
-
-require ($_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php');
-
+error_log('test.php....1');
+require ('../vendor/autoload.php');
+error_log('test.php....2');
 if($_GET['errors'] == 'true'){
   error_reporting(E_ALL);
   ini_set('display_errors',1);
@@ -38,14 +38,26 @@ try{
 
   $sendgrid = new SendGrid('imkt7foa4635', 'app35717248@heroku.com');
 
+  error_log('test.php....4');
+
   $message = new SendGrid\Email();
+
+  error_log('test.php....5');
+
   $message->addTo('preddy@reisystems.com')->
     setFrom('preddy@reisystems.com')->
     setSubject('test subject from heroku')->
     setText('test message from heroku')->
     setHtml('<strong>Hello World!</strong>');
-  $response = $sendgrid->send($message);
 
+  error_log('test.php....6');
+
+  $response = $sendgrid->send($message);
+echo "sent email".$response;
+  error_log('test.php....7');
 }catch (Exception $e){
+  error_log('test.php....8');
+print 'EX>>>'.$e;
   error_log('Exception >>>>>>>>>>>>' . $e);
+  error_log('test.php....9');
 }
