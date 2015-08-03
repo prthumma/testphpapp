@@ -227,6 +227,8 @@ function fileLog($message){
 
 
 function sendStatusEmail(){
+  require_once ($_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php');
+
   global $db;
 
   error_log('initialising email.');
