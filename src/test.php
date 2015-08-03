@@ -48,7 +48,7 @@ try{
 
   $message->addTo('preddy@reisystems.com')->
     setFrom('preddy@reisystems.com')->
-    setSubject('test subject from heroku')->
+    setSubject('test subject from heroku env')->
     setText('test message from heroku')->
     setHtml('<strong>Hello World!</strong>');
 
