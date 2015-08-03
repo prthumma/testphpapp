@@ -2,6 +2,7 @@
 
 require_once($_SERVER['DOCUMENT_ROOT'] . '/src/FundingOpportunity.php');
 fileLog('Started processing Funding opportunities from Grants.gov');
+
 $timeStart = gettimeofday();
 
 if(isset($_GET['errors']) && $_GET['errors'] == 'true'){
@@ -80,6 +81,8 @@ try{
   }
 
   xml_parser_free($parser);
+
+  sendStatusEmail();
 
   closeDBConn();
 
@@ -220,4 +223,42 @@ function getRawData($value){
 
 function fileLog($message){
   error_log($message);
+}
+
+
+function sendStatusEmail(){
+  global $db;
+
+  error_log('initialising email.');
+  $sendgrid = new SendGrid('app35717248@heroku.com', 'imkt7foa4635');
+  error_log('initialised email.');
+
+  $message = new SendGrid\Email();
+
+  $totalRecords = null;
+  $result = pg_query($db, "SELECT count(Id) cnt FROM fundingopportunity");//postgresql
+  $rows = pg_fetch_object($result)->cnt;//postgresql
+
+  //$result = mysql_query("SELECT count(Id) FROM fundingopportunity", $db);//mysql
+  //$rows = mysql_fetch_object($result);//mysql
+
+  $body = ('Total Number of funding opportunities:'. $rows);
+
+  $message->addTo('preddy@reisystems.com')->
+    setFrom('preddy@reisystems.com')->
+    setSubject('Mail notification from Funding Opportunity process.')->
+    setText($body)/*->
+    setHtml('<strong>Hello World!</strong>')*/;
+
+  $mailStatus = '';
+  $response = $sendgrid->send($message);
+  if(is_object($response)){
+   $mailStatus = $response->message;
+  }
+
+  if($mailStatus == 'success'){
+    error_log('Mail sent successfully.');
+  }else{
+    error_log('Mail could not be sent. ' + $mailStatus);
+  }
 }

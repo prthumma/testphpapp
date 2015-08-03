@@ -1,5 +1,5 @@
 <?php
-error_log('test.php....1');
+error_log('test.php....1<br/>');
 //require_once ('../vendor/autoload.php');
 require_once ($_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php');
 
@@ -49,13 +49,17 @@ try{
   $message->addTo('preddy@reisystems.com')->
     setFrom('preddy@reisystems.com')->
     setSubject('test subject from heroku env')->
-    setText('test message from heroku')->
-    setHtml('<strong>Hello World!</strong>');
+    setText('test message from heroku')/*->
+    setHtml('<strong>Hello World!</strong>')*/;
 
   error_log('test.php....6');
 
   $response = $sendgrid->send($message);
 echo "sent email";
+  print_r($response);
+  if(is_object($response)){
+    echo "sent email..msg:" . $response->message;
+  }
   error_log('test.php....7');
 }catch (Exception $e){
   error_log('test.php....8');
