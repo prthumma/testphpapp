@@ -47,5 +47,5 @@ try{
   $response = $sendgrid->send($message);
 
 }catch (Exception $e){
-  print $e;
+  error_log('Exception >>>>>>>>>>>>' . $e);
 }
