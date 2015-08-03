@@ -1,6 +1,6 @@
 <?php
 
-require 'vendor/autoload.php';
+require ($_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php');
 
 if($_GET['errors'] == 'true'){
   error_reporting(E_ALL);
