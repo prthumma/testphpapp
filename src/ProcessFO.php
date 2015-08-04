@@ -204,7 +204,9 @@ function endElements($parser, $name){
     if ($name == 'FundingOppModSynopsis' || $name == 'FundingOppSynopsis') {
       if(is_object($fo)){
         resetDBConn();
+        fileLog("*************BEFORE PROCESS::::::::: ");
         $fo->processData($db);
+        fileLog("*************AFTER PROCESS::::::::: ");
         $cnst++;
       }
     }
