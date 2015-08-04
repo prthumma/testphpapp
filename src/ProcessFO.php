@@ -197,7 +197,7 @@ function startElements($parser, $name, $attrs){
 }
 
 function endElements($parser, $name){
-  global $fo, $db, $element, $elementParsed, $cnt;
+  global $fo, $db, $element, $elementParsed, $cnst;
   if(!empty($name))
   {
     $elementParsed[$element] = 'Y';
@@ -205,13 +205,13 @@ function endElements($parser, $name){
       if(is_object($fo)){
         resetDBConn();
         $fo->processData($db);
-        $cnt++;
+        $cnst++;
       }
     }
   }
 
-  if($cnt >= 2){
-    fileLog("*************Breaked PROCESS::::::::: " + $cnt);
+  if($cnst >= 2){
+    fileLog("*************Breaked PROCESS::::::::: " + $cnst);
     exit;
   }
 }
