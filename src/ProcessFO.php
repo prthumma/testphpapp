@@ -1,5 +1,5 @@
 <?php
-
+try{
 require_once($_SERVER['DOCUMENT_ROOT'] . '/src/FundingOpportunity.php');
 fileLog('Started processing Funding opportunities from Grants.gov');
 
@@ -43,8 +43,6 @@ $xmlExtractedFile = "{$xmlExtractDir}/{$todayFile}.xml";
 
 global $fo, $element, $elementParsed, $elements;
 
-try{
-
   if (!file_exists($xmlExtractedFile)) {
     fileLog("File {$xmlExtractedFile} does not exist."); exit;
   }else {
@@ -82,7 +80,7 @@ try{
 
   xml_parser_free($parser);
 
-  sendStatusEmail();
+  sendFOStatusEmail();
 
   closeDBConn();
 
@@ -98,6 +96,16 @@ try{
   $end = gettimeofday();
   $totalTime = ($end['sec'] - $timeStart['sec']);
   fileLog("Exception: Total Time take to process: {$totalTime} ms");
+
+  try{
+    $subject = "Exception while processing Funding Opportunity.";
+    $body = "Exception Details:\n";
+      $body .= $e;
+    $details = array('subject' => $subject, 'body' => $body);
+    sendStatusEmail($details);
+  }catch(Exception $me){
+    fileLog("Status Mail Exception:" . $me);
+  }
 }
 
 function collect_file($url){
@@ -225,17 +233,8 @@ function fileLog($message){
   error_log($message);
 }
 
-
-function sendStatusEmail(){
-  require_once ($_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php');
-
+function sendFOStatusEmail(){
   global $db;
-
-  error_log('initialising email.');
-  $sendgrid = new SendGrid('app35717248@heroku.com', 'imkt7foa4635');
-  error_log('initialised email.');
-
-  $message = new SendGrid\Email();
 
   $totalRecords = null;
   $result = pg_query($db, "SELECT count(Id) cnt FROM fundingopportunity");//postgresql
@@ -244,13 +243,29 @@ function sendStatusEmail(){
   //$result = mysql_query("SELECT count(Id) FROM fundingopportunity", $db);//mysql
   //$rows = mysql_fetch_object($result);//mysql
 
+  $subject = 'Mail notification from Funding Opportunity process.';
   $body = ('Total Number of funding opportunities:'. $rows);
+
+  $details = array('subject' => $subject, 'body' => $body);
+
+  sendStatusEmail($details);
+}
+
+function sendStatusEmail($details = array()){
+  require_once ($_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php');
+
+
+
+  error_log('initialising email.');
+  $sendgrid = new SendGrid('app35717248@heroku.com', 'imkt7foa4635');
+  error_log('initialised email.');
+
+  $message = new SendGrid\Email();
 
   $message->addTo('preddy@reisystems.com')->
     setFrom('preddy@reisystems.com')->
-    setSubject('Mail notification from Funding Opportunity process.')->
-    setText($body)/*->
-    setHtml('<strong>Hello World!</strong>')*/;
+    setSubject($details['subject'])->
+    setText($details['body']);
 
   $mailStatus = '';
   $response = $sendgrid->send($message);
@@ -259,7 +274,7 @@ function sendStatusEmail(){
   }
 
   if($mailStatus == 'success'){
-    error_log('Mail sent successfully.');
+    error_log('Mail sent successfully.' + $mailStatus);
   }else{
     error_log('Mail could not be sent. ' + $mailStatus);
   }
