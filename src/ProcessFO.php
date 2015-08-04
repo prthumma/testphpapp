@@ -116,8 +116,11 @@ function setGlobalData(){
     $translateConfig[$groupkey][$row->inputvalue] = $row->outputvalue;
   }
   $result = null;
-  fileLog('Set translate config data. Total Rows: ' . count($translateConfig));
 
+  fileLog('Set translate config data. Total Rows: ' . count($translateConfig));
+  fileLog('Set translate config data. Total Rows: ' . count($translateConfig['FundingActivityCategory']));
+  fileLog('Set translate config data. Total Rows: ' . count($translateConfig['FundingInstrumentType']));
+  fileLog('Set translate config data. Total Rows: ' . count($translateConfig['EligibilityCategory']));
 }
 
 function parseXMLFile($xmlExtractedFile){

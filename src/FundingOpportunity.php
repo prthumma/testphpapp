@@ -236,7 +236,7 @@ class FundingOpportunity{
             WHERE fundingoppnumber = {$this->getFormattedData('FundingOppNumber')}";
       }
       // echo $query.'<br/><br/><br/>';
-
+      fileLog('QUERY>>>' . $query);
       $result = pg_query($db, $query);//postgresql
       if(!$result){
         throw new Exception(pg_errormessage());
