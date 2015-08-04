@@ -182,6 +182,8 @@ class FundingOpportunity{
   }
 
   function processData($db){
+    global $cnst;
+
     $this->db = $db;
     $query = null;
     try{
@@ -191,6 +193,9 @@ class FundingOpportunity{
       if(empty($foNumber)
         || ( !empty($foDueDate) && (strtotime(date('Y-m-d')) > strtotime($foDueDate)) )
       ){
+        if(isset($cnst)){
+          $cnst--;
+        }
         return;
       }
 

@@ -205,9 +205,10 @@ function endElements($parser, $name){
       if(is_object($fo)){
         resetDBConn();
         fileLog("*************BEFORE PROCESS::::::::: ");
+        $cnst++;
         $fo->processData($db);
         fileLog("*************AFTER PROCESS::::::::: ");
-        $cnst++;
+
       }
     }
   }
