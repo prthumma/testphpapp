@@ -173,7 +173,7 @@ class FundingOpportunity{
   }
 
   function processData($db){
-    global $dbType, $totalRecords;
+    global $dbType, $totalRecords, $sfns, $dbSchema;
 
     $this->db = $db;
     $query = null;
@@ -191,23 +191,23 @@ class FundingOpportunity{
       }
 
       if($dbType == 'mysql'){
-        $result = mysql_query("SELECT Id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}'", $this->db);//mysql
+        $result = mysql_query("SELECT Id FROM stgfoalead__c WHERE fundingopportunitynumber__c = '{$foNumber}'", $this->db);//mysql
         $rows = mysql_num_rows($result);//mysql
       }else{
-        $result = pg_query($db, "SELECT id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}'");//postgresql
+        $result = pg_query($db, "SELECT id FROM {$dbSchema}{$sfns}stgfoalead__c WHERE {$sfns}fundingopportunitynumber__c = '{$foNumber}'");//postgresql
         $rows = pg_num_rows($result);//postgresql
       }
 
       if($rows == 0 ){
-        $query = "INSERT INTO fundingopportunity(
-            postdate, modificationnumber, fundinginstrumenttype, fundingactivitycategory,
-            othercategoryexplanation, numberofawards, estimatedfunding, awardceiling,
-            awardfloor, agencymailingaddress, fundingopptitle, fundingoppnumber,
-            applicationsduedate, applicationsduedateexplanation, archivedate,
-            location, office, agency, agencyid, fundingoppdescription, cfdanumber,
-            eligibilitycategory, additionaleligibilityinfo, costsharing,
-            obtainfundingopptext, fundingoppurl, agencycontact, agencyemailaddress,
-            agencyemaildescriptor)
+        $query = "INSERT INTO {$dbSchema}{$sfns}stgfoalead__c(
+            {$sfns}posteddate__c, {$sfns}modificationnumber__c, {$sfns}fundinginstrumenttype__c, {$sfns}categoryoffundingactivity__c,
+            {$sfns}categoryexplanation__c, {$sfns}expectednumberofawards__c, {$sfns}estimatedtotalprogramfunding__c, {$sfns}awardceiling__c,
+            {$sfns}awardfloor__c, {$sfns}agencymailingaddress__c, {$sfns}fundingopportunitytitle__c, {$sfns}fundingopportunitynumber__c,
+            {$sfns}applicationsduedate__c, {$sfns}applicationsduedateexplanation__c, {$sfns}archivedate__c,
+            {$sfns}location__c, {$sfns}office__c, {$sfns}federalagency__c, {$sfns}fundingopportunitydescription__c, {$sfns}cfdanumber__c,
+            {$sfns}eligibilitycategory__c, {$sfns}additionaleligibilityinformation__c, {$sfns}costsharing__c,
+            {$sfns}additionalinformationurltext__c, {$sfns}fundingoppurl__c, {$sfns}agencycontact__c, {$sfns}agencyemailaddress__c,
+            {$sfns}agencyemaildescriptor__c)
         VALUES ({$this->getFormattedData('PostDate')}, {$this->getFormattedData('ModificationNumber')}, {$this->getFormattedData('FundingInstrumentType')}, {$this->getFormattedData('FundingActivityCategory')},
                 {$this->getFormattedData('OtherCategoryExplanation')}, {$this->getFormattedData('NumberOfAwards')}, {$this->getFormattedData('EstimatedFunding')}, {$this->getFormattedData('AwardCeiling')},
                 {$this->getFormattedData('AwardFloor')}, {$this->getFormattedData('AgencyMailingAddress')}, {$this->getFormattedData('FundingOppTitle')}, {$this->getFormattedData('FundingOppNumber')},
@@ -217,21 +217,20 @@ class FundingOpportunity{
                 {$this->getFormattedData('ObtainFundingOppText')}, {$this->getFormattedData('FundingOppURL')}, {$this->getFormattedData('AgencyContact')}, {$this->getFormattedData('AgencyEmailAddress')},
                 {$this->getFormattedData('AgencyEmailDescriptor')});";
       }else{
-        $query = "UPDATE fundingopportunity
-            set postdate = {$this->getFormattedData('PostDate')}, modificationnumber = {$this->getFormattedData('ModificationNumber')},
-            fundinginstrumenttype = {$this->getFormattedData('FundingInstrumentType')}, fundingactivitycategory = {$this->getFormattedData('FundingActivityCategory')},
-            othercategoryexplanation = {$this->getFormattedData('OtherCategoryExplanation')}, numberofawards = {$this->getFormattedData('NumberOfAwards')},
-            estimatedfunding = {$this->getFormattedData('EstimatedFunding')}, awardceiling = {$this->getFormattedData('AwardCeiling')},
-            awardfloor = {$this->getFormattedData('AwardFloor')}, agencymailingaddress  = {$this->getFormattedData('AgencyMailingAddress')},
-            fundingopptitle = {$this->getFormattedData('FundingOppTitle')}, applicationsduedate = {$this->getFormattedData('ApplicationsDueDate')},
-            applicationsduedateexplanation = {$this->getFormattedData('ApplicationsDueDateExplanation')}, archivedate = {$this->getFormattedData('ArchiveDate')},
-            location = {$this->getFormattedData('Location')}, office = {$this->getFormattedData('Office')}, agency = {$this->getFormattedData('Agency')}, agencyid =  {$this->getTranslatedFormattedData('Agency')},
-            fundingoppdescription = {$this->getFormattedData('FundingOppDescription')}, cfdanumber = {$this->getFormattedData('CFDANumber')},
-            eligibilitycategory = {$this->getFormattedData('EligibilityCategory')}, additionaleligibilityinfo = {$this->getFormattedData('AdditionalEligibilityInfo')},
-            costsharing = {$this->getFormattedData('CostSharing')}, obtainfundingopptext = {$this->getFormattedData('ObtainFundingOppText')}, fundingoppurl = {$this->getFormattedData('FundingOppURL')},
-            agencycontact = {$this->getFormattedData('AgencyContact')}, agencyemailaddress = {$this->getFormattedData('AgencyEmailAddress')}, agencyemaildescriptor = {$this->getFormattedData('AgencyEmailDescriptor')},
-            lastmodifieddate = now()
-            WHERE fundingoppnumber = {$this->getFormattedData('FundingOppNumber')}";
+        $query = "UPDATE {$dbSchema}{$sfns}stgfoalead__c
+            set {$sfns}posteddate__c = {$this->getFormattedData('PostDate')}, {$sfns}modificationnumber__c = {$this->getFormattedData('ModificationNumber')},
+            {$sfns}fundinginstrumenttype__c = {$this->getFormattedData('FundingInstrumentType')}, {$sfns}categoryoffundingactivity__c = {$this->getFormattedData('FundingActivityCategory')},
+            {$sfns}categoryexplanation__c = {$this->getFormattedData('OtherCategoryExplanation')}, {$sfns}expectednumberofawards__c = {$this->getFormattedData('NumberOfAwards')},
+            {$sfns}estimatedtotalprogramfunding__c = {$this->getFormattedData('EstimatedFunding')}, {$sfns}awardceiling__c = {$this->getFormattedData('AwardCeiling')},
+            {$sfns}awardfloor__c = {$this->getFormattedData('AwardFloor')}, {$sfns}agencymailingaddress__c  = {$this->getFormattedData('AgencyMailingAddress')},
+            {$sfns}fundingopportunitytitle__c = {$this->getFormattedData('FundingOppTitle')}, {$sfns}applicationsduedate__c = {$this->getFormattedData('ApplicationsDueDate')},
+            {$sfns}applicationsduedateexplanation__c = {$this->getFormattedData('ApplicationsDueDateExplanation')}, {$sfns}archivedate__c = {$this->getFormattedData('ArchiveDate')},
+            {$sfns}location__c = {$this->getFormattedData('Location')}, {$sfns}office__c = {$this->getFormattedData('Office')}, {$sfns}federalagency__c =  {$this->getTranslatedFormattedData('Agency')},
+            {$sfns}fundingopportunitydescription__c = {$this->getFormattedData('FundingOppDescription')}, {$sfns}cfdanumber__c = {$this->getFormattedData('CFDANumber')},
+            {$sfns}eligibilitycategory__c = {$this->getFormattedData('EligibilityCategory')}, {$sfns}additionaleligibilityinformation__c = {$this->getFormattedData('AdditionalEligibilityInfo')},
+            {$sfns}costsharing__c = {$this->getFormattedData('CostSharing')}, {$sfns}additionalinformationurltext__c = {$this->getFormattedData('ObtainFundingOppText')}, {$sfns}fundingoppurl__c = {$this->getFormattedData('FundingOppURL')},
+            {$sfns}agencycontact__c = {$this->getFormattedData('AgencyContact')}, {$sfns}agencyemailaddress__c = {$this->getFormattedData('AgencyEmailAddress')}, {$sfns}agencyemaildescriptor__c = {$this->getFormattedData('AgencyEmailDescriptor')}
+            WHERE {$sfns}fundingopportunitynumber__c = {$this->getFormattedData('FundingOppNumber')}";
       }
 
       //fileLog('QUERY>>>' . $query);

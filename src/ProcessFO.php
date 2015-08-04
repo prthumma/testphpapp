@@ -239,10 +239,10 @@ function endElements($parser, $name){
     }
   }
 
-  /*if($totalRecords >= 2){
+  if($totalRecords >= 2){
     fileLog("*************Breaked PROCESS::::::::: {$totalRecords}");
     exit;
-  }*/
+  }
 }
 
 function resetDBConn(){
@@ -259,7 +259,7 @@ function resetDBConn(){
 }
 
 function setDBConn(){
-  global $db, $dbConnStartTime, $dbType;
+  global $db, $dbConnStartTime, $dbType, $sfns, $dbSchema;
 
   $dbType = 'pg';
   if(isset($_GET['dbtype']) && !empty($_GET['dbtype'])){
@@ -269,9 +269,13 @@ function setDBConn(){
   $dbConnStartTime = gettimeofday();
 
   if($dbType == 'mysql'){
+    $sfns = '';
+    $dbSchema = '';
     $db = mysql_connect('localhost:3306', 'root', '') or die("Unable to connect to MySQL");//mysql
     $selected = mysql_select_db("performance_1204",$db) or die("Could not select examples");//mysql
   }else{
+    $sfns = 'ggsmaster__';
+    $dbSchema = 'salesforcemaster.';
     $db = pg_connect(getenv('DATABASE_URL'));//postgresql
   }
 
