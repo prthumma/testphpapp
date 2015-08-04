@@ -1,57 +1,86 @@
 <?php
+
 try{
-require_once($_SERVER['DOCUMENT_ROOT'] . '/src/FundingOpportunity.php');
-fileLog('Started processing Funding opportunities from Grants.gov');
+  require_once($_SERVER['DOCUMENT_ROOT'] . '/src/FundingOpportunity.php');
+  fileLog('Started processing Funding opportunities from Grants.gov');
 
-$timeStart = gettimeofday();
+  $timeStart = gettimeofday();
 
-if(isset($_GET['errors']) && $_GET['errors'] == 'true'){
-  error_reporting(E_ALL);
-  ini_set('display_errors',1);
-}
-
-set_time_limit(0);
-
-//clean up working directory
-foreach (new DirectoryIterator(($_SERVER['DOCUMENT_ROOT'] . '/files/working')) as $fileInfo) {
-  if(!$fileInfo->isDot()) {
-    unlink($fileInfo->getPathname());
+  if(isset($_GET['errors']) && $_GET['errors'] == 'true'){
+    error_reporting(E_ALL);
+    ini_set('display_errors',1);
   }
-}
-fileLog('Cleaned up directory '. ($_SERVER['DOCUMENT_ROOT'] . '/files/working'));
-//Download today file
-$todayDate = date('Ymd');
-$todayFile = "GrantsDBExtract{$todayDate}";
-$xmlUrl = "http://www.grants.gov/web/grants/xml-extract.html?p_p_id=xmlextract_WAR_grantsxmlextractportlet_INSTANCE_5NxW0PeTnSUa&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_cacheability=cacheLevelPage&p_p_col_id=column-1&p_p_col_pos=1&p_p_col_count=2&download={$todayFile}.zip";
-$xmlZipFile = ($_SERVER['DOCUMENT_ROOT'] . "/files/working/{$todayFile}.zip");
-$temp_file_contents = collect_file($xmlUrl);
-write_to_file($temp_file_contents, $xmlZipFile);
-fileLog("Downloaded file from {$xmlUrl}");
-//unzip the file
-$xmlExtractDir = ($_SERVER['DOCUMENT_ROOT'] . '/files/working');
-$zip = new ZipArchive;
-if ($zip->open($xmlZipFile) === TRUE) {
-  $zip->extractTo($xmlExtractDir);
-  $zip->close();
-  fileLog("File Extracted.");
-} else {
-  fileLog("File Extraction failed.");
-  return;
-}
 
-$xmlExtractedFile = "{$xmlExtractDir}/{$todayFile}.xml";
+  set_time_limit(0);
 
-global $fo, $element, $elementParsed, $elements;
-
-  if (!file_exists($xmlExtractedFile)) {
-    fileLog("File {$xmlExtractedFile} does not exist."); exit;
-  }else {
-    fileLog("Extracted Downloaded file {$xmlExtractedFile}");
+  //clean up working directory
+  foreach (new DirectoryIterator(($_SERVER['DOCUMENT_ROOT'] . '/files/working')) as $fileInfo) {
+    if(!$fileInfo->isDot()) {
+      unlink($fileInfo->getPathname());
+    }
+  }
+  fileLog('Cleaned up directory '. ($_SERVER['DOCUMENT_ROOT'] . '/files/working'));
+  //Download today's file
+  $todayDate = date('Ymd');
+  $todayFile = "GrantsDBExtract{$todayDate}";
+  $xmlUrl = "http://www.grants.gov/web/grants/xml-extract.html?p_p_id=xmlextract_WAR_grantsxmlextractportlet_INSTANCE_5NxW0PeTnSUa&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_cacheability=cacheLevelPage&p_p_col_id=column-1&p_p_col_pos=1&p_p_col_count=2&download={$todayFile}.zip";
+  $xmlZipFile = ($_SERVER['DOCUMENT_ROOT'] . "/files/working/{$todayFile}.zip");
+  $temp_file_contents = collect_file($xmlUrl);
+  write_to_file($temp_file_contents, $xmlZipFile);
+  fileLog("Downloaded file from {$xmlUrl}");
+  //unzip the file
+  $xmlExtractDir = ($_SERVER['DOCUMENT_ROOT'] . '/files/working');
+  $zip = new ZipArchive;
+  if ($zip->open($xmlZipFile) === TRUE) {
+    $zip->extractTo($xmlExtractDir);
+    $zip->close();
+    fileLog("File Extracted.");
+  } else {
+    fileLog("File Extraction failed.");
+    return;
   }
 
   setDBConn();
 
-  $elements = array('PostDate','ModificationNumber','FundingInstrumentType','FundingActivityCategory',
+  setGlobalData();
+
+  $xmlExtractedFile = "{$xmlExtractDir}/{$todayFile}.xml";
+  parseXMLFile($xmlExtractedFile);
+
+  sendFOStatusEmail();
+
+  closeDBConn();
+
+  $end = gettimeofday();
+  $totalTime = ($end['sec'] - $timeStart['sec']);
+  fileLog("Total Time taken to process: {$totalTime} sec.");
+  fileLog("Completed processing the file.");
+
+}catch (Exception $e){
+  fileLog('Exception >>>>>>>>>>>>' . $e);
+  closeDBConn();
+
+  $end = gettimeofday();
+  $totalTime = ($end['sec'] - $timeStart['sec']);
+  fileLog("Exception: Total Time taken to process: {$totalTime} sec");
+
+  try{
+    $subject = "Exception while processing Funding Opportunity.";
+    $body = "Exception Details:\n";
+    $body .= $e;
+    $details = array('subject' => $subject, 'body' => $body);
+    sendStatusEmail($details);
+  }catch(Exception $me){
+    fileLog("Status Mail Exception:" . $me);
+  }
+}
+
+function setGlobalData(){
+  global $db, $acceptedElements, $accounts, $translateConfig;
+
+  fileLog('Setting global data');
+
+  $acceptedElements = array('PostDate','ModificationNumber','FundingInstrumentType','FundingActivityCategory',
     'OtherCategoryExplanation','NumberOfAwards','EstimatedFunding','AwardCeiling',
     'AwardFloor','AgencyMailingAddress','FundingOppTitle','FundingOppNumber',
     'ApplicationsDueDate','ApplicationsDueDateExplanation','ArchiveDate',
@@ -60,6 +89,45 @@ global $fo, $element, $elementParsed, $elements;
     'ObtainFundingOppText','FundingOppURL','AgencyContact','AgencyEmailAddress',
     'AgencyEmailDescriptor');
 
+  $result = pg_query($db, 'SELECT name AS agency, sfid FROM salesforcemaster.account');//postgresql
+  if(!$result){
+    throw new Exception(pg_errormessage());
+  }
+
+  $accounts = array();
+  while ($row = pg_fetch_row($result)) {
+    $agency = strtolower($row->agency);
+    $accounts[$agency] = $row->sfid;
+  }
+  $result = null;
+  fileLog('Set accounts data. Total Rows: ' . count($accounts));
+
+  $result = pg_query($db, 'SELECT groupkey, inputvalue, outputvalue FROM datatranslateconfig');//postgresql
+  if(!$result){
+    throw new Exception(pg_errormessage());
+  }
+
+  $translateConfig = array();
+  while ($row = pg_fetch_row($result)) {
+    $groupkey = $row->groupkey;
+    if(!isset($translateConfig[$groupkey])){
+      $translateConfig[$groupkey] = array();
+    }
+    $translateConfig[$groupkey][$row->inputvalue] = $row->outputvalue;
+  }
+  $result = null;
+  fileLog('Set translate config data. Total Rows: ' . count($translateConfig));
+
+}
+
+function parseXMLFile($xmlExtractedFile){
+
+  if (!file_exists($xmlExtractedFile)) {
+    fileLog("File {$xmlExtractedFile} does not exist.");
+    throw new Exception("File {$xmlExtractedFile} does not exist.");
+  }else {
+    fileLog("Extracted Downloaded file {$xmlExtractedFile}");
+  }
 
   // Creates a new XML parser and returns a resource handle referencing it to be used by the other XML functions.
   $parser = xml_parser_create();
@@ -79,33 +147,6 @@ global $fo, $element, $elementParsed, $elements;
   }
 
   xml_parser_free($parser);
-
-  sendFOStatusEmail();
-
-  closeDBConn();
-
-  $end = gettimeofday();
-  $totalTime = ($end['sec'] - $timeStart['sec']);
-  fileLog("Total Time take to process: {$totalTime} sec.");
-  fileLog("Completed processing the file.");
-
-}catch (Exception $e){
-  fileLog('Exception >>>>>>>>>>>>' . $e);
-  closeDBConn();
-
-  $end = gettimeofday();
-  $totalTime = ($end['sec'] - $timeStart['sec']);
-  fileLog("Exception: Total Time take to process: {$totalTime} ms");
-
-  try{
-    $subject = "Exception while processing Funding Opportunity.";
-    $body = "Exception Details:\n";
-      $body .= $e;
-    $details = array('subject' => $subject, 'body' => $body);
-    sendStatusEmail($details);
-  }catch(Exception $me){
-    fileLog("Status Mail Exception:" . $me);
-  }
 }
 
 function collect_file($url){
@@ -128,9 +169,8 @@ function write_to_file($text, $new_filename){
   fclose($fp);
 }
 
-function startElements($parser, $name, $attrs)
-{
-  global $fo, $element, $elementParsed, $elements;
+function startElements($parser, $name, $attrs){
+  global $fo, $element, $elementParsed, $acceptedElements;
 
   if(!empty($name))
   {
@@ -141,7 +181,7 @@ function startElements($parser, $name, $attrs)
     if ($name == 'ObtainFundingOppText' || $name == 'AgencyContact') {
       if(is_array($attrs)){
         foreach($attrs as $key => $value){
-          if (is_object($fo) && in_array($element, $elements))
+          if (is_object($fo) && in_array($element, $acceptedElements))
           {
             $fo->setData($key, getRawData($value));
           }
@@ -154,7 +194,7 @@ function startElements($parser, $name, $attrs)
 }
 
 function endElements($parser, $name){
-  global $fo, $db, $element, $elementParsed;
+  global $fo, $db, $element, $elementParsed, $cnt;
   if(!empty($name))
   {
     $elementParsed[$element] = 'Y';
@@ -162,8 +202,14 @@ function endElements($parser, $name){
       if(is_object($fo)){
         resetDBConn();
         $fo->processData($db);
+        $cnt++;
       }
     }
+  }
+
+  if($cnt >= 2){
+    fileLog("*************Breaked PROCESS:::::::::");
+    exit;
   }
 }
 
@@ -172,7 +218,7 @@ function resetDBConn(){
 
   $dbConnEndTime = gettimeofday();
   $totalTime = ($dbConnEndTime['sec'] - $dbConnStartTime['sec']);
-  if(($totalTime / 60) > 2){
+  if($totalTime > 120){
     fileLog("Closing current database connection after {$totalTime} seconds");
     closeDBConn();
     fileLog("Getting new database connection");
@@ -190,7 +236,8 @@ function setDBConn(){
   //$selected = mysql_select_db("performance_1204",$db) or die("Could not select examples");//mysql
 
   if (!$db) {
-    fileLog("Database connection error."); exit;
+    fileLog("Database connection error.");
+    throw new Exception("Database connection error.");
   }
 
   fileLog("Got the database connection");
@@ -207,11 +254,10 @@ function closeDBConn(){
   }
 }
 
-function characterData($parser, $data)
-{
-  global $fo, $element, $elementParsed, $elements;
+function characterData($parser, $data){
+  global $fo, $element, $elementParsed, $acceptedElements;
   if($elementParsed[$element] == 'N'){
-    if (in_array($element, $elements))
+    if (in_array($element, $acceptedElements))
     {
       $fo->setData($element, getRawData($data));
     }

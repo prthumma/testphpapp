@@ -35,6 +35,10 @@ class FundingOpportunity{
       case "FundingActivityCategory":
       case "FundingInstrumentType":
       case "EligibilityCategory":
+        $tempData = $this->translateCodes($key, $data);
+        return "'{$tempData}'";
+        break;
+
       case "CFDANumber":
         $tempData = $this->convertCodes($data);
         return "'{$tempData}'";
@@ -84,6 +88,20 @@ class FundingOpportunity{
     }
   }
 
+  private function getTranslatedFormattedData($key){
+    $data = isset($this->data[$key]) ? $this->data[$key] : null;
+    switch($key){
+      case "Agency":
+          $tempData = $this->mapAgencyId($data);
+          return "'{$tempData}'";
+          break;
+      default:
+        return "''";
+          break;
+    }
+  }
+
+
   private function formatDate($value){
     if(is_numeric($value)){
       $date = DateTime::createFromFormat('mdY', $value);
@@ -104,9 +122,60 @@ class FundingOpportunity{
     return null;
   }
 
+  private function translateCodes($key, $values){
+    global $translateConfig;
+
+    $translateKeyConfig = null;
+    if(isset($translateConfig[$key])){
+      $translateKeyConfig = $translateConfig[$key];
+    }
+
+    $translatedValues = array();
+
+    /*
+     if(!isset($translateKeyConfig)){
+      if(is_array($values)){
+        $translatedValues = $values;
+      }else if(!empty($values)){
+        $translatedValues[] = $values;
+      }
+    }*/
+
+    if(!isset($translateKeyConfig)){
+      if(is_array($values)){
+        foreach($values as $value){
+          if(isset($translateKeyConfig[$value])){
+            $translatedValues[] = $translateKeyConfig[$value];
+          }
+        }
+      }else if(!empty($values)){
+        if(isset($translateKeyConfig[$values])){
+          $translatedValues[] = $translateKeyConfig[$values];
+        }
+      }
+    }
+
+    if(!empty($translatedValues)){
+      return implode(';', $translatedValues);
+    }
+
+    return null;
+  }
+
   private function convertNumber($value){
     if(is_numeric($value)){
       return $value;
+    }
+
+    return null;
+  }
+
+  private function mapAgencyId($value){
+    global $accounts;
+    $ag = strtolower($value);
+
+    if(isset($accounts[$ag])){
+      return $accounts[$ag];
     }
 
     return null;
@@ -137,7 +206,7 @@ class FundingOpportunity{
             othercategoryexplanation, numberofawards, estimatedfunding, awardceiling,
             awardfloor, agencymailingaddress, fundingopptitle, fundingoppnumber,
             applicationsduedate, applicationsduedateexplanation, archivedate,
-            location, office, agency, fundingoppdescription, cfdanumber,
+            location, office, agency, agencyid, fundingoppdescription, cfdanumber,
             eligibilitycategory, additionaleligibilityinfo, costsharing,
             obtainfundingopptext, fundingoppurl, agencycontact, agencyemailaddress,
             agencyemaildescriptor)
@@ -145,7 +214,7 @@ class FundingOpportunity{
                 {$this->getFormattedData('OtherCategoryExplanation')}, {$this->getFormattedData('NumberOfAwards')}, {$this->getFormattedData('EstimatedFunding')}, {$this->getFormattedData('AwardCeiling')},
                 {$this->getFormattedData('AwardFloor')}, {$this->getFormattedData('AgencyMailingAddress')}, {$this->getFormattedData('FundingOppTitle')}, {$this->getFormattedData('FundingOppNumber')},
                 {$this->getFormattedData('ApplicationsDueDate')}, {$this->getFormattedData('ApplicationsDueDateExplanation')}, {$this->getFormattedData('ArchiveDate')},
-                {$this->getFormattedData('Location')}, {$this->getFormattedData('Office')}, {$this->getFormattedData('Agency')}, {$this->getFormattedData('FundingOppDescription')}, {$this->getFormattedData('CFDANumber')},
+                {$this->getFormattedData('Location')}, {$this->getFormattedData('Office')}, {$this->getFormattedData('Agency')}, , {$this->getTranslatedFormattedData('Agency')}, {$this->getFormattedData('FundingOppDescription')}, {$this->getFormattedData('CFDANumber')},
                 {$this->getFormattedData('EligibilityCategory')}, {$this->getFormattedData('AdditionalEligibilityInfo')}, {$this->getFormattedData('CostSharing')},
                 {$this->getFormattedData('ObtainFundingOppText')}, {$this->getFormattedData('FundingOppURL')}, {$this->getFormattedData('AgencyContact')}, {$this->getFormattedData('AgencyEmailAddress')},
                 {$this->getFormattedData('AgencyEmailDescriptor')});";
