@@ -95,7 +95,7 @@ function setGlobalData(){
   }
 
   $accounts = array();
-  while ($row = pg_fetch_row($result)) {
+  while ($row = pg_fetch_object($result)) {
     $agency = strtolower($row->agency);
     $accounts[$agency] = $row->sfid;
   }
@@ -108,7 +108,7 @@ function setGlobalData(){
   }
 
   $translateConfig = array();
-  while ($row = pg_fetch_row($result)) {
+  while ($row = pg_fetch_object($result)) {
     $groupkey = $row->groupkey;
     if(!isset($translateConfig[$groupkey])){
       $translateConfig[$groupkey] = array();
