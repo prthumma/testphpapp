@@ -35,7 +35,7 @@ class FundingOpportunity{
       case "FundingActivityCategory":
       case "FundingInstrumentType":
       case "EligibilityCategory":
-        $tempData = $this->translateCodes($key, $data);
+        $tempData = $this->translateCodes(('grants.gov:'.$key), $data);
         return "'{$tempData}'";
         break;
 

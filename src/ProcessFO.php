@@ -118,9 +118,9 @@ function setGlobalData(){
   $result = null;
 
   fileLog('Set translate config data. Total Rows: ' . count($translateConfig));
-  fileLog('Set translate config data. Total Rows: ' . count($translateConfig['FundingActivityCategory']));
-  fileLog('Set translate config data. Total Rows: ' . count($translateConfig['FundingInstrumentType']));
-  fileLog('Set translate config data. Total Rows: ' . count($translateConfig['EligibilityCategory']));
+  fileLog('Set translate config data. Total Rows: ' . count($translateConfig['grants.gov:FundingActivityCategory']));
+  fileLog('Set translate config data. Total Rows: ' . count($translateConfig['grants.gov:FundingInstrumentType']));
+  fileLog('Set translate config data. Total Rows: ' . count($translateConfig['grants.gov:EligibilityCategory']));
 }
 
 function parseXMLFile($xmlExtractedFile){
@@ -211,7 +211,7 @@ function endElements($parser, $name){
   }
 
   if($cnt >= 2){
-    fileLog("*************Breaked PROCESS:::::::::");
+    fileLog("*************Breaked PROCESS::::::::: " + $cnt);
     exit;
   }
 }
