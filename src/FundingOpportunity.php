@@ -214,7 +214,7 @@ class FundingOpportunity{
                 {$this->getFormattedData('OtherCategoryExplanation')}, {$this->getFormattedData('NumberOfAwards')}, {$this->getFormattedData('EstimatedFunding')}, {$this->getFormattedData('AwardCeiling')},
                 {$this->getFormattedData('AwardFloor')}, {$this->getFormattedData('AgencyMailingAddress')}, {$this->getFormattedData('FundingOppTitle')}, {$this->getFormattedData('FundingOppNumber')},
                 {$this->getFormattedData('ApplicationsDueDate')}, {$this->getFormattedData('ApplicationsDueDateExplanation')}, {$this->getFormattedData('ArchiveDate')},
-                {$this->getFormattedData('Location')}, {$this->getFormattedData('Office')}, {$this->getFormattedData('Agency')}, , {$this->getTranslatedFormattedData('Agency')}, {$this->getFormattedData('FundingOppDescription')}, {$this->getFormattedData('CFDANumber')},
+                {$this->getFormattedData('Location')}, {$this->getFormattedData('Office')}, {$this->getFormattedData('Agency')}, {$this->getTranslatedFormattedData('Agency')}, {$this->getFormattedData('FundingOppDescription')}, {$this->getFormattedData('CFDANumber')},
                 {$this->getFormattedData('EligibilityCategory')}, {$this->getFormattedData('AdditionalEligibilityInfo')}, {$this->getFormattedData('CostSharing')},
                 {$this->getFormattedData('ObtainFundingOppText')}, {$this->getFormattedData('FundingOppURL')}, {$this->getFormattedData('AgencyContact')}, {$this->getFormattedData('AgencyEmailAddress')},
                 {$this->getFormattedData('AgencyEmailDescriptor')});";
@@ -227,7 +227,7 @@ class FundingOpportunity{
             awardfloor = {$this->getFormattedData('AwardFloor')}, agencymailingaddress  = {$this->getFormattedData('AgencyMailingAddress')},
             fundingopptitle = {$this->getFormattedData('FundingOppTitle')}, applicationsduedate = {$this->getFormattedData('ApplicationsDueDate')},
             applicationsduedateexplanation = {$this->getFormattedData('ApplicationsDueDateExplanation')}, archivedate = {$this->getFormattedData('ArchiveDate')},
-            location = {$this->getFormattedData('Location')}, office = {$this->getFormattedData('Office')}, agency = {$this->getFormattedData('Agency')},
+            location = {$this->getFormattedData('Location')}, office = {$this->getFormattedData('Office')}, agency = {$this->getFormattedData('Agency')}, agencyid =  {$this->getTranslatedFormattedData('Agency')},
             fundingoppdescription = {$this->getFormattedData('FundingOppDescription')}, cfdanumber = {$this->getFormattedData('CFDANumber')},
             eligibilitycategory = {$this->getFormattedData('EligibilityCategory')}, additionaleligibilityinfo = {$this->getFormattedData('AdditionalEligibilityInfo')},
             costsharing = {$this->getFormattedData('CostSharing')}, obtainfundingopptext = {$this->getFormattedData('ObtainFundingOppText')}, fundingoppurl = {$this->getFormattedData('FundingOppURL')},
@@ -236,7 +236,7 @@ class FundingOpportunity{
             WHERE fundingoppnumber = {$this->getFormattedData('FundingOppNumber')}";
       }
       // echo $query.'<br/><br/><br/>';
-      fileLog('QUERY>>>' . $query);
+      //fileLog('QUERY>>>' . $query);
       $result = pg_query($db, $query);//postgresql
       if(!$result){
         throw new Exception(pg_errormessage());
