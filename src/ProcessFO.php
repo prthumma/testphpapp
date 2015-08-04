@@ -37,7 +37,7 @@ try{
     fileLog("File Extracted.");
   } else {
     fileLog("File Extraction failed.");
-    return;
+    throw new Exception("File Extraction failed.");
   }
 
   setDBConn();
@@ -76,7 +76,7 @@ try{
 }
 
 function setGlobalData(){
-  global $db, $acceptedElements, $accounts, $translateConfig;
+  global $db, $acceptedElements, $accounts, $translateConfig, $dbType;
 
   fileLog('Setting global data');
 
@@ -89,38 +89,67 @@ function setGlobalData(){
     'ObtainFundingOppText','FundingOppURL','AgencyContact','AgencyEmailAddress',
     'AgencyEmailDescriptor');
 
-  $result = pg_query($db, 'SELECT name AS agency, sfid FROM salesforcemaster.account');//postgresql
-  if(!$result){
-    throw new Exception(pg_errormessage());
-  }
+  if($dbType == 'mysql'){
+    $result = mysql_query('SELECT name AS agency, sfid FROM account', $db);//mysql
+    if(!$result){
+      throw new Exception(pg_errormessage());
+    }
 
-  $accounts = array();
-  while ($row = pg_fetch_object($result)) {
-    $agency = strtolower($row->agency);
-    $accounts[$agency] = $row->sfid;
+    $accounts = array();
+    while ($row = mysql_fetch_object($result)) {
+      $agency = strtolower($row->agency);
+      $accounts[$agency] = $row->sfid;
+    }
+  }else{
+    $result = pg_query($db, 'SELECT name AS agency, sfid FROM salesforcemaster.account');//postgresql
+    if(!$result){
+      throw new Exception(pg_errormessage());
+    }
+
+    $accounts = array();
+    while ($row = pg_fetch_object($result)) {
+      $agency = strtolower($row->agency);
+      $accounts[$agency] = $row->sfid;
+    }
   }
   $result = null;
   fileLog('Set accounts data. Total Rows: ' . count($accounts));
 
-  $result = pg_query($db, 'SELECT groupkey, inputvalue, outputvalue FROM datatranslateconfig');//postgresql
-  if(!$result){
-    throw new Exception(pg_errormessage());
-  }
-
-  $translateConfig = array();
-  while ($row = pg_fetch_object($result)) {
-    $groupkey = $row->groupkey;
-    if(!isset($translateConfig[$groupkey])){
-      $translateConfig[$groupkey] = array();
+  if($dbType == 'mysql'){
+    $result = mysql_query('SELECT groupkey, inputvalue, outputvalue FROM datatranslateconfig', $db);//mysql
+    if(!$result){
+      throw new Exception(pg_errormessage());
     }
-    $translateConfig[$groupkey][$row->inputvalue] = $row->outputvalue;
+
+    $translateConfig = array();
+    while ($row = mysql_fetch_object($result)) {
+      $groupkey = $row->groupkey;
+      if(!isset($translateConfig[$groupkey])){
+        $translateConfig[$groupkey] = array();
+      }
+      $translateConfig[$groupkey][$row->inputvalue] = $row->outputvalue;
+    }
+  }else{
+    $result = pg_query($db, 'SELECT groupkey, inputvalue, outputvalue FROM datatranslateconfig');//postgresql
+    if(!$result){
+      throw new Exception(pg_errormessage());
+    }
+
+    $translateConfig = array();
+    while ($row = pg_fetch_object($result)) {
+      $groupkey = $row->groupkey;
+      if(!isset($translateConfig[$groupkey])){
+        $translateConfig[$groupkey] = array();
+      }
+      $translateConfig[$groupkey][$row->inputvalue] = $row->outputvalue;
+    }
   }
   $result = null;
 
   fileLog('Set translate config data. Total Rows: ' . count($translateConfig));
-  fileLog('Set translate config data. Total Rows: ' . count($translateConfig['grants.gov:FundingActivityCategory']));
-  fileLog('Set translate config data. Total Rows: ' . count($translateConfig['grants.gov:FundingInstrumentType']));
-  fileLog('Set translate config data. Total Rows: ' . count($translateConfig['grants.gov:EligibilityCategory']));
+  fileLog('Set translate config data[FundingActivityCategory]. Total Rows: ' . count($translateConfig['grants.gov:FundingActivityCategory']));
+  fileLog('Set translate config data[FundingInstrumentType]. Total Rows: ' . count($translateConfig['grants.gov:FundingInstrumentType']));
+  fileLog('Set translate config data[EligibilityCategory]. Total Rows: ' . count($translateConfig['grants.gov:EligibilityCategory']));
 }
 
 function parseXMLFile($xmlExtractedFile){
@@ -197,26 +226,23 @@ function startElements($parser, $name, $attrs){
 }
 
 function endElements($parser, $name){
-  global $fo, $db, $element, $elementParsed, $cnst;
+  global $fo, $db, $element, $elementParsed, $totalRecords;
   if(!empty($name))
   {
     $elementParsed[$element] = 'Y';
     if ($name == 'FundingOppModSynopsis' || $name == 'FundingOppSynopsis') {
       if(is_object($fo)){
         resetDBConn();
-        fileLog("*************BEFORE PROCESS::::::::: ");
-        $cnst++;
+        $totalRecords++;
         $fo->processData($db);
-        fileLog("*************AFTER PROCESS::::::::: ");
-
       }
     }
   }
 
-  if($cnst >= 2){
-    fileLog("*************Breaked PROCESS::::::::: {$cnst}");
+  /*if($totalRecords >= 2){
+    fileLog("*************Breaked PROCESS::::::::: {$totalRecords}");
     exit;
-  }
+  }*/
 }
 
 function resetDBConn(){
@@ -233,13 +259,21 @@ function resetDBConn(){
 }
 
 function setDBConn(){
-  global $db, $dbConnStartTime;
+  global $db, $dbConnStartTime, $dbType;
+
+  $dbType = 'pg';
+  if(isset($_GET['dbtype']) && !empty($_GET['dbtype'])){
+    $dbType = $_GET['dbtype'];
+  }
 
   $dbConnStartTime = gettimeofday();
 
-  $db = pg_connect(getenv('DATABASE_URL'));//postgresql
-  //$db = mysql_connect('localhost:3306', 'root', '') or die("Unable to connect to MySQL");//mysql
-  //$selected = mysql_select_db("performance_1204",$db) or die("Could not select examples");//mysql
+  if($dbType == 'mysql'){
+    $db = mysql_connect('localhost:3306', 'root', '') or die("Unable to connect to MySQL");//mysql
+    $selected = mysql_select_db("performance_1204",$db) or die("Could not select examples");//mysql
+  }else{
+    $db = pg_connect(getenv('DATABASE_URL'));//postgresql
+  }
 
   if (!$db) {
     fileLog("Database connection error.");
@@ -250,11 +284,15 @@ function setDBConn(){
 }
 
 function closeDBConn(){
-  global $db;
+  global $db, $dbType;
 
   if($db){
-    pg_close($db);//postgresql
-    //mysql_close($db);//mysql
+    if($dbType == 'mysql'){
+      mysql_close($db);//mysql
+    }else{
+      pg_close($db);//postgresql
+    }
+
     $db = null;
     fileLog('Closed DB Connection.');
   }
@@ -286,14 +324,17 @@ function fileLog($message){
 }
 
 function sendFOStatusEmail(){
-  global $db;
+  global $db, $dbType;
 
   $totalRecords = null;
-  $result = pg_query($db, "SELECT count(Id) cnt FROM fundingopportunity");//postgresql
-  $rows = pg_fetch_object($result)->cnt;//postgresql
 
-  //$result = mysql_query("SELECT count(Id) FROM fundingopportunity", $db);//mysql
-  //$rows = mysql_fetch_object($result);//mysql
+  if($dbType == 'mysql'){
+    $result = mysql_query("SELECT count(Id) As cnt FROM fundingopportunity", $db);//mysql
+    $rows = mysql_fetch_object($result)->cnt;//mysql
+  }else{
+    $result = pg_query($db, "SELECT count(Id) As cnt FROM fundingopportunity");//postgresql
+    $rows = pg_fetch_object($result)->cnt;//postgresql
+  }
 
   $subject = 'Mail notification from Funding Opportunity process.';
   $body = ('Total Number of funding opportunities:'. $rows);
@@ -304,9 +345,13 @@ function sendFOStatusEmail(){
 }
 
 function sendStatusEmail($details = array()){
+  global $dbType;
+
+  if($dbType == 'mysql'){
+    return;
+  }
+
   require_once ($_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php');
-
-
 
   error_log('initialising email.');
   $sendgrid = new SendGrid('app35717248@heroku.com', 'imkt7foa4635');
@@ -322,7 +367,7 @@ function sendStatusEmail($details = array()){
   $mailStatus = '';
   $response = $sendgrid->send($message);
   if(is_object($response)){
-   $mailStatus = $response->message;
+    $mailStatus = $response->message;
   }
 
   if($mailStatus == 'success'){

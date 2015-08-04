@@ -21,6 +21,7 @@ class FundingOpportunity{
   }
 
   private function getFormattedData($key){
+    global $dbType;
     $data = isset($this->data[$key]) ? $this->data[$key] : null;
 
     switch($key){
@@ -28,8 +29,11 @@ class FundingOpportunity{
       case "ApplicationsDueDate":
       case "ArchiveDate":
         $tempData = $this->formatDate($data);
-        return $tempData ? "'{$tempData}'" : "NULLIF('','')::date";//postgresql
-        //return $tempData ? "'{$tempData}'" : "NULL";//mysql
+        if($dbType == 'mysql'){
+          return $tempData ? "'{$tempData}'" : "NULL";//mysql
+        }else{
+          return $tempData ? "'{$tempData}'" : "NULLIF('','')::date";//postgresql
+        }
         break;
 
       case "FundingActivityCategory":
@@ -47,43 +51,39 @@ class FundingOpportunity{
       case "NumberOfAwards":
       case "ModificationNumber":
         $tempData = $this->convertNumber($data);
-        return $tempData ? $tempData : "NULLIF('','')::integer";//postgresql
-        //return $tempData ? "'{$tempData}'" : "NULL";//mysql
+        if($dbType == 'mysql'){
+          return $tempData ? "'{$tempData}'" : "NULL";//mysql
+        }else{
+          return $tempData ? $tempData : "NULLIF('','')::integer";//postgresql
+        }
         break;
 
       case "EstimatedFunding":
       case "AwardCeiling":
       case "AwardFloor":
         $tempData = $this->convertNumber($data);
-        return $tempData ? $tempData : "cast(NULLIF('','') as double precision)";//postgresql
-        //return $tempData ? "'{$tempData}'" : "NULL";//mysql
+        if($dbType == 'mysql'){
+          return $tempData ? "'{$tempData}'" : "NULL";//mysql
+        }else{
+          return $tempData ? $tempData : "cast(NULLIF('','') as double precision)";//postgresql
+        }
         break;
 
       default:
         $d = null;
         if(is_array($data)){
           $d = implode('', $data);
-          /*$val = false;
-          foreach($data as $key1 => $value){
-            if(is_array($value)){
-              $val = true;
-            }
-          }
-         if($val){
-           echo ("<br/>". "key->{$key}");
-           print_r($data);
-           print_r($this->data);
-           echo "**";
-         }*/
         }else{
           $d = $data;
         }
 
-        $tempData = ($d ? pg_escape_string($this->db, $d) : null);//postgresql
-        return $tempData ? "'{$tempData}'" : "NULLIF('','')::varchar";//postgresql
-
-        //$tempData = ($d ? mysql_real_escape_string ( $d, $this->db) : null);//mysql
-        //return $tempData ? "'{$tempData}'" : "NULL";//mysql
+        if($dbType == 'mysql'){
+          $tempData = ($d ? mysql_real_escape_string ( $d, $this->db) : null);//mysql
+          return $tempData ? "'{$tempData}'" : "NULL";//mysql
+        }else{
+          $tempData = ($d ? pg_escape_string($this->db, $d) : null);//postgresql
+          return $tempData ? "'{$tempData}'" : "NULLIF('','')::varchar";//postgresql
+        }
         break;
     }
   }
@@ -92,12 +92,12 @@ class FundingOpportunity{
     $data = isset($this->data[$key]) ? $this->data[$key] : null;
     switch($key){
       case "Agency":
-          $tempData = $this->mapAgencyId($data);
-          return "'{$tempData}'";
-          break;
+        $tempData = $this->mapAgencyId($data);
+        return "'{$tempData}'";
+        break;
       default:
         return "''";
-          break;
+        break;
     }
   }
 
@@ -132,16 +132,7 @@ class FundingOpportunity{
 
     $translatedValues = array();
 
-    /*
-     if(!isset($translateKeyConfig)){
-      if(is_array($values)){
-        $translatedValues = $values;
-      }else if(!empty($values)){
-        $translatedValues[] = $values;
-      }
-    }*/
-
-    if(!isset($translateKeyConfig)){
+    if(isset($translateKeyConfig)){
       if(is_array($values)){
         foreach($values as $value){
           if(isset($translateKeyConfig[$value])){
@@ -182,7 +173,7 @@ class FundingOpportunity{
   }
 
   function processData($db){
-    global $cnst;
+    global $dbType, $totalRecords;
 
     $this->db = $db;
     $query = null;
@@ -193,17 +184,19 @@ class FundingOpportunity{
       if(empty($foNumber)
         || ( !empty($foDueDate) && (strtotime(date('Y-m-d')) > strtotime($foDueDate)) )
       ){
-        if(isset($cnst)){
-          $cnst--;
+        if(isset($totalRecords)){
+          $totalRecords--;
         }
         return;
       }
 
-      $result = pg_query($db, "SELECT id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}'");//postgresql
-      $rows = pg_num_rows($result);//postgresql
-
-      //$result = mysql_query("SELECT Id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}'", $this->db);//mysql
-      //$rows = mysql_num_rows($result);//mysql
+      if($dbType == 'mysql'){
+        $result = mysql_query("SELECT Id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}'", $this->db);//mysql
+        $rows = mysql_num_rows($result);//mysql
+      }else{
+        $result = pg_query($db, "SELECT id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}'");//postgresql
+        $rows = pg_num_rows($result);//postgresql
+      }
 
       if($rows == 0 ){
         $query = "INSERT INTO fundingopportunity(
@@ -240,17 +233,20 @@ class FundingOpportunity{
             lastmodifieddate = now()
             WHERE fundingoppnumber = {$this->getFormattedData('FundingOppNumber')}";
       }
-      // echo $query.'<br/><br/><br/>';
-      //fileLog('QUERY>>>' . $query);
-      $result = pg_query($db, $query);//postgresql
-      if(!$result){
-        throw new Exception(pg_errormessage());
-      }
 
-      /*$result = mysql_query($query, $this->db);//mysql
-      if(!$result){
-        throw new Exception(mysql_error());
-      }*/
+      //fileLog('QUERY>>>' . $query);
+
+      if($dbType == 'mysql'){
+        $result = mysql_query($query, $this->db);//mysql
+        if(!$result){
+          throw new Exception(mysql_error());
+        }
+      }else{
+        $result = pg_query($db, $query);//postgresql
+        if(!$result){
+          throw new Exception(pg_errormessage());
+        }
+      }
 
     }catch (Exception $e){
       fileLog('QUERY>>>' . $query);
