@@ -213,7 +213,7 @@ function endElements($parser, $name){
   }
 
   if($cnst >= 2){
-    fileLog("*************Breaked PROCESS::::::::: " + $cnst);
+    fileLog("*************Breaked PROCESS::::::::: {$cnst}");
     exit;
   }
 }
