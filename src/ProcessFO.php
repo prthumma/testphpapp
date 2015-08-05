@@ -328,7 +328,7 @@ function fileLog($message){
 }
 
 function sendFOStatusEmail(){
-  global $db, $dbType;
+  global $db, $dbType, $sfns, $dbSchema;
 
   $totalRecords = null;
 
@@ -336,7 +336,7 @@ function sendFOStatusEmail(){
     $result = mysql_query("SELECT count(Id) As cnt FROM fundingopportunity", $db);//mysql
     $rows = mysql_fetch_object($result)->cnt;//mysql
   }else{
-    $result = pg_query($db, "SELECT count(Id) As cnt FROM fundingopportunity");//postgresql
+    $result = pg_query($db, "SELECT count(Id) As cnt FROM {$dbSchema}{$sfns}stgfoalead__c");//postgresql
     $rows = pg_fetch_object($result)->cnt;//postgresql
   }
 
