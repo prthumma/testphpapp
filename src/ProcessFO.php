@@ -343,6 +343,7 @@ function sendFOStatusEmail(){
   $subject = 'Mail notification from Funding Opportunity process.';
   $body = ('Total Number of funding opportunities:'. $rows);
 
+  fileLog($body);
   $details = array('subject' => $subject, 'body' => $body);
 
   sendStatusEmail($details);
@@ -357,9 +358,9 @@ function sendStatusEmail($details = array()){
 
   require_once ($_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php');
 
-  error_log('initialising email.');
+  fileLog('initialising email.');
   $sendgrid = new SendGrid('app35717248@heroku.com', 'imkt7foa4635');
-  error_log('initialised email.');
+  fileLog('initialised email.');
 
   $message = new SendGrid\Email();
 
@@ -375,8 +376,8 @@ function sendStatusEmail($details = array()){
   }
 
   if($mailStatus == 'success'){
-    error_log('Mail sent successfully.' + $mailStatus);
+    fileLog('Mail sent successfully.' + $mailStatus);
   }else{
-    error_log('Mail could not be sent. ' + $mailStatus);
+    fileLog('Mail could not be sent. ' + $mailStatus);
   }
 }
