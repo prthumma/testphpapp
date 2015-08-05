@@ -198,6 +198,7 @@ class FundingOpportunity{
         $rows = pg_num_rows($result);//postgresql
       }
 
+      if($dbType != 'mysql')//Adjust columns for my sql
       if($rows == 0 ){
         $query = "INSERT INTO {$dbSchema}{$sfns}stgfoalead__c(
             {$sfns}posteddate__c, {$sfns}modificationnumber__c, {$sfns}fundinginstrumenttype__c, {$sfns}categoryoffundingactivity__c,
