@@ -239,10 +239,10 @@ function endElements($parser, $name){
     }
   }
 
-  if($totalRecords >= 2){
+  /*if($totalRecords >= 2){
     fileLog("*************Breaked PROCESS::::::::: {$totalRecords}");
     exit;
-  }
+  }*/
 }
 
 function resetDBConn(){
