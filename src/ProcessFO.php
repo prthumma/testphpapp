@@ -1,6 +1,9 @@
 <?php
 
 try{
+
+  date_default_timezone_set('America/New_York');
+
   require_once($_SERVER['DOCUMENT_ROOT'] . '/src/FundingOpportunity.php');
   fileLog('Started processing Funding opportunities from Grants.gov');
 
