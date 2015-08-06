@@ -1,4 +1,8 @@
 <?php
+
+error_log('Test file' . date('Y-m-d'));
+return;
+
 error_log('test.php....1<br/>');
 //require_once ('../vendor/autoload.php');
 require_once ($_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php');
