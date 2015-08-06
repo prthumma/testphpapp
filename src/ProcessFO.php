@@ -314,9 +314,9 @@ function getRawData($value){
     return $value;
   }
 
-  $value =  htmlentities($value, ENT_NOQUOTES, 'WINDOWS-1252');
+  /*$value =  htmlentities($value, ENT_NOQUOTES, 'WINDOWS-1252');
   $value = str_replace('&Acirc;', '', $value);
-  $value = htmlspecialchars_decode($value);
+  $value = htmlspecialchars_decode($value);*/
   return $value;
 }
 
