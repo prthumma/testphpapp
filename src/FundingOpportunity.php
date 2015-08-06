@@ -330,6 +330,7 @@ class FundingOpportunity{
             WHERE {$sfns}fundingopportunitynumber__c = {$this->getFormattedData('FundingOppNumber')}";
 
           if($appendCFDANumber){
+            fileLog("*************APPENDING CFDA {$cfdaNumber}");
             $query .= " AND {$sfns}cfdanumber__c = '{$cfdaNumber}'";
           }
         }
