@@ -1,6 +1,15 @@
 <?php
 
+
+
+error_log('BEFORE......date_default_timezone_get()>>>>>>>>>>>: ' . date_default_timezone_get());
+error_log('Test file date: ' . date('Y-m-d'));
+
+date_default_timezone_set('America/New_York');
+
+error_log('AFTER...........date_default_timezone_get()>>>>>>>>>>>:' . date_default_timezone_get());
 error_log('Test file' . date('Y-m-d'));
+
 return;
 
 error_log('test.php....1<br/>');
