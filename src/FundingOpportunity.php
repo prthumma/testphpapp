@@ -328,7 +328,7 @@ class FundingOpportunity{
         }
       }
 
-      if($totalRecords >= 1){
+      if($totalRecords >= 10){
         fileLog("*************Breaked PROCESS:::::::::-{$foNumber}={$totalRecords}");
         exit;
       }
