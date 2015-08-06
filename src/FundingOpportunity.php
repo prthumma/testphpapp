@@ -248,7 +248,7 @@ class FundingOpportunity{
       }
 
       if($rows >= 1 ){
-        fileLog("FoNumber overridden- {$foNumber}--> mod no: {$this->data('ModificationNumber')}");
+        fileLog("FoNumber overridden- {$foNumber}--> mod no: {$this->data['ModificationNumber']}");
       }
 
       $foAgency = isset($this->data['Agency']) ? $this->data['Agency'] : null;
