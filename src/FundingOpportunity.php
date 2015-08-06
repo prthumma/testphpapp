@@ -78,7 +78,7 @@ class FundingOpportunity{
         if($dbType == 'mysql'){
           return $tempData ? "'{$tempData}'" : "NULL";//mysql
         }else{
-          return $tempData ? $tempData : "cast(NULLIF('','') as double precision)";//postgresql
+          return $tempData ? "'{$tempData}'" : "NULLIF('','')::varchar";//postgresql
         }
         break;
       default:
@@ -224,7 +224,7 @@ class FundingOpportunity{
     try{
 
       $foNumber = isset($this->data['FundingOppNumber']) ? $this->data['FundingOppNumber'] : null;
-      $cfdaNumber = isset($this->data['CFDANumber']) ? $this->data['CFDANumber'] : 'NULL';
+      $cfdaNumber = isset($this->data['CFDANumber']) ? $this->convertCodes($this->data['CFDANumber']) : 'NULL';
 
       if(!isset($totalRecords)){
         $totalRecords = 0;
@@ -328,10 +328,10 @@ class FundingOpportunity{
         }
       }
 
-      /*if($totalRecords >= 5){
+      if($totalRecords >= 1){
         fileLog("*************Breaked PROCESS:::::::::-{$foNumber}={$totalRecords}");
         exit;
-      }*/
+      }
 
     }catch (Exception $e){
       fileLog('QUERY>>>' . $query);
