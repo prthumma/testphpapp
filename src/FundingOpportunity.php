@@ -225,9 +225,9 @@ class FundingOpportunity{
 
       $foNumber = isset($this->data['FundingOppNumber']) ? $this->data['FundingOppNumber'] : null;
 
-      if($foNumber != 'PA-AFRL-AFOSR-2015-0001'){
+      /*if($foNumber != 'PA-AFRL-AFOSR-2015-0001'){
         return;
-      }
+      }*/
 
       $cfdaNumber = isset($this->data['CFDANumber']) ? $this->convertCodes($this->data['CFDANumber']) : 'NULL';
 
@@ -246,20 +246,20 @@ class FundingOpportunity{
         $rows = mysql_num_rows($result);//mysql
       }else{
         if(!empty($cfdaNumber) && strlen($cfdaNumber) == 6){
-          fileLog("*************COMPARE IFFFFFF CFDA - SELECT id FROM {$dbSchema}{$sfns}stgfoalead__c WHERE {$sfns}fundingopportunitynumber__c = '{$foNumber}' AND  {$sfns}cfdanumber__c = '{$cfdaNumber}'");
+          //fileLog("*************COMPARE IFFFFFF CFDA - SELECT id FROM {$dbSchema}{$sfns}stgfoalead__c WHERE {$sfns}fundingopportunitynumber__c = '{$foNumber}' AND  {$sfns}cfdanumber__c = '{$cfdaNumber}'");
           $result = pg_query($db, "SELECT id FROM {$dbSchema}{$sfns}stgfoalead__c WHERE {$sfns}fundingopportunitynumber__c = '{$foNumber}' AND  {$sfns}cfdanumber__c = '{$cfdaNumber}'");//postgresql
           $rows = pg_num_rows($result);//postgresql
           if($rows > 0){
             $appendCFDANumber = true;
           }
         }else{
-          fileLog("*************COMPARE ELSEEEE CFDA - SELECT id FROM {$dbSchema}{$sfns}stgfoalead__c WHERE {$sfns}fundingopportunitynumber__c = '{$foNumber}'");
+          //fileLog("*************COMPARE ELSEEEE CFDA - SELECT id FROM {$dbSchema}{$sfns}stgfoalead__c WHERE {$sfns}fundingopportunitynumber__c = '{$foNumber}'");
           $result = pg_query($db, "SELECT id FROM {$dbSchema}{$sfns}stgfoalead__c WHERE {$sfns}fundingopportunitynumber__c = '{$foNumber}'");//postgresql
           $rows = pg_num_rows($result);//postgresql
         }
       }
 
-      fileLog("*************ROWS------------>:{$rows}");
+      //fileLog("*************ROWS------------>:{$rows}");
 
       /*if($rows >= 1 ){//good only for the first time
         fileLog("FoNumber overridden- {$foNumber}--> mod no: {$this->data['ModificationNumber']}");
@@ -293,7 +293,7 @@ class FundingOpportunity{
 
       if($dbType != 'mysql')//Adjust columns for my sql
         if($rows == 0 ){
-          fileLog("*************EXECUTING INSERT");
+          //fileLog("*************EXECUTING INSERT");
           $query = "INSERT INTO {$dbSchema}{$sfns}stgfoalead__c(
             {$sfns}posteddate__c, {$sfns}modificationnumber__c, {$sfns}fundinginstrumenttype__c, {$sfns}categoryoffundingactivity__c,
             {$sfns}categoryexplanation__c, {$sfns}expectednumberofawards__c, {$sfns}estimatedtotalprogramfunding__c, {$sfns}awardceiling__c,
@@ -312,7 +312,7 @@ class FundingOpportunity{
                 {$this->getFormattedData('ObtainFundingOppText')}, {$this->getFormattedData('FundingOppURL')}, {$this->getFormattedData('AgencyContact')}, {$this->getFormattedData('AgencyEmailAddress')},
                 {$this->getFormattedData('AgencyEmailDescriptor')}, 'Grants.gov', {$this->getTranslatedFormattedData('Status')});";
         }else{
-          fileLog("*************EXECUTING UPDATE");
+          //fileLog("*************EXECUTING UPDATE");
           $query = "UPDATE {$dbSchema}{$sfns}stgfoalead__c
             set {$sfns}posteddate__c = {$this->getFormattedData('PostDate')}, {$sfns}modificationnumber__c = {$this->getFormattedData('ModificationNumber')},
             {$sfns}fundinginstrumenttype__c = {$this->getFormattedData('FundingInstrumentType')}, {$sfns}categoryoffundingactivity__c = {$this->getFormattedData('FundingActivityCategory')},
@@ -330,7 +330,7 @@ class FundingOpportunity{
             WHERE {$sfns}fundingopportunitynumber__c = {$this->getFormattedData('FundingOppNumber')}";
 
           if($appendCFDANumber){
-            fileLog("*************APPENDING CFDA {$cfdaNumber}");
+            //fileLog("*************APPENDING CFDA {$cfdaNumber}");
             $query .= " AND {$sfns}cfdanumber__c = '{$cfdaNumber}'";
           }
         }
