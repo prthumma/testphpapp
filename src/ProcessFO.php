@@ -226,23 +226,17 @@ function startElements($parser, $name, $attrs){
 }
 
 function endElements($parser, $name){
-  global $fo, $db, $element, $elementParsed, $totalRecords;
+  global $fo, $db, $element, $elementParsed;
   if(!empty($name))
   {
     $elementParsed[$element] = 'Y';
     if ($name == 'FundingOppModSynopsis' || $name == 'FundingOppSynopsis') {
       if(is_object($fo)){
         resetDBConn();
-        $totalRecords++;
         $fo->processData($db);
       }
     }
   }
-
-  /*if($totalRecords >= 2){
-    fileLog("*************Breaked PROCESS::::::::: {$totalRecords}");
-    exit;
-  }*/
 }
 
 function resetDBConn(){

@@ -89,18 +89,29 @@ class FundingOpportunity{
   }
 
   private function getTranslatedFormattedData($key){
+    global $dbType;
+
     $data = isset($this->data[$key]) ? $this->data[$key] : null;
+    $d = null;
     switch($key){
       case "Agency":
-        $tempData = $this->mapAgencyId($data);
-        return "'{$tempData}'";
+        $d = $this->mapAgencyId($data);
+        break;
+      case "Status":
+        $d = $this->mapFoStatus();
         break;
       default:
-        return "''";
         break;
     }
-  }
 
+    if($dbType == 'mysql'){
+      $tempData = ($d ? mysql_real_escape_string ( $d, $this->db) : null);//mysql
+      return $tempData ? "'{$tempData}'" : "NULL";//mysql
+    }else{
+      $tempData = ($d ? pg_escape_string($this->db, $d) : null);//postgresql
+      return $tempData ? "'{$tempData}'" : "NULLIF('','')::varchar";//postgresql
+    }
+  }
 
   private function formatDate($value){
     if(is_numeric($value)){
@@ -172,6 +183,27 @@ class FundingOpportunity{
     return null;
   }
 
+  private function mapFoStatus(){
+
+    $foDueDate = isset($this->data['ApplicationsDueDate']) ? strtotime($this->formatDate($this->data['ApplicationsDueDate'])) : null;
+    $foArchiveDate = isset($this->data['ArchiveDate']) ? strtotime($this->formatDate($this->data['ArchiveDate'])) : null;
+
+    $today = strtotime(date('Y-m-d'));
+    $status = '';
+
+    if(
+      (!empty($foArchiveDate) && $foArchiveDate < $today)
+      ||
+      (!empty($foDueDate) && $foDueDate < $today)
+    ){
+      $status = 'Closed';
+    }else if(empty($foDueDate) || $foDueDate >= $today){
+      $status = 'Open';
+    }
+
+    return $status;
+  }
+
   function processData($db){
     global $dbType, $totalRecords, $sfns, $dbSchema;
 
@@ -179,28 +211,57 @@ class FundingOpportunity{
     $query = null;
     try{
 
-      $foNumber = $this->data['FundingOppNumber'];
-      $foDueDate = isset($this->data['ApplicationsDueDate']) ? $this->formatDate($this->data['ApplicationsDueDate']) : null;
-      if(empty($foNumber)
-        || ( !empty($foDueDate) && (strtotime(date('Y-m-d')) > strtotime($foDueDate)) )
-      ){
-        if(isset($totalRecords)){
-          $totalRecords--;
-        }
-        return;
+      $foNumber = isset($this->data['FundingOppNumber']) ? $this->data['FundingOppNumber'] : null;
+      if(!isset($totalRecords)){
+        $totalRecords = 0;
+        //fileLog("INIT totalRecords-{$totalRecords}-{$foNumber}");
       }
 
+      $totalRecords++;
+      //fileLog("INCREASE totalRecords-{$totalRecords}-{$foNumber}");
+
+      $rows = 0;
       if($dbType == 'mysql'){
-        $result = mysql_query("SELECT Id FROM stgfoalead__c WHERE fundingopportunitynumber__c = '{$foNumber}'", $this->db);//mysql
+        $result = mysql_query("SELECT Id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}'", $this->db);//mysql
         $rows = mysql_num_rows($result);//mysql
       }else{
-        $result = pg_query($db, "SELECT id FROM {$dbSchema}{$sfns}stgfoalead__c WHERE {$sfns}fundingopportunitynumber__c = '{$foNumber}'");//postgresql
+        $result = pg_query($db, "SELECT id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}'");//postgresql
         $rows = pg_num_rows($result);//postgresql
       }
 
+      if($rows >= 1 ){
+        fileLog("FoNumber overridden- {$foNumber}--> mod no: {$this->getFormattedData('ModificationNumber')}");
+      }
+
+      $foAgency = isset($this->data['Agency']) ? $this->data['Agency'] : null;
+      $foPostDate = isset($this->data['PostDate']) ? strtotime($this->formatDate($this->data['PostDate'])) : null;
+      $foDueDate = isset($this->data['ApplicationsDueDate']) ? strtotime($this->formatDate($this->data['ApplicationsDueDate'])) : null;
+      $foArchiveDate = isset($this->data['ArchiveDate']) ? strtotime($this->formatDate($this->data['ArchiveDate'])) : null;
+
+      $today = strtotime(date('Y-m-d'));
+
+      if(
+        empty($foAgency) || $foAgency == 'None' || (!empty($foPostDate) && ($foPostDate > $today))
+        ||
+        ( $rows == 0 && //never processed before
+        (
+          ( !empty($foArchiveDate) && ($foArchiveDate < $today) )
+          ||
+          ( !empty($foDueDate) && ($foDueDate < $today) )
+        )
+        )
+      ){
+        if($totalRecords > 0){
+          $totalRecords--;
+          //fileLog("DECREASE totalRecords-{$totalRecords}-{$foNumber}");
+        }
+        fileLog("Skipped FoNumber- {$foNumber}");
+        return;
+      }
+
       if($dbType != 'mysql')//Adjust columns for my sql
-      if($rows == 0 ){
-        $query = "INSERT INTO {$dbSchema}{$sfns}stgfoalead__c(
+        if($rows == 0 ){
+          $query = "INSERT INTO {$dbSchema}{$sfns}stgfoalead__c(
             {$sfns}posteddate__c, {$sfns}modificationnumber__c, {$sfns}fundinginstrumenttype__c, {$sfns}categoryoffundingactivity__c,
             {$sfns}categoryexplanation__c, {$sfns}expectednumberofawards__c, {$sfns}estimatedtotalprogramfunding__c, {$sfns}awardceiling__c,
             {$sfns}awardfloor__c, {$sfns}agencymailingaddress__c, {$sfns}fundingopportunitytitle__c, {$sfns}fundingopportunitynumber__c,
@@ -208,7 +269,7 @@ class FundingOpportunity{
             {$sfns}location__c, {$sfns}office__c, {$sfns}federalagency__c, {$sfns}fundingopportunitydescription__c, {$sfns}cfdanumber__c,
             {$sfns}eligibilitycategory__c, {$sfns}additionaleligibilityinformation__c, {$sfns}costsharing__c,
             {$sfns}additionalinformationurltext__c, {$sfns}fundingoppurl__c, {$sfns}agencycontact__c, {$sfns}agencyemailaddress__c,
-            {$sfns}agencyemaildescriptor__c)
+            {$sfns}agencyemaildescriptor__c), {$sfns}source__c), {$sfns}sourcestatus__c)
         VALUES ({$this->getFormattedData('PostDate')}, {$this->getFormattedData('ModificationNumber')}, {$this->getFormattedData('FundingInstrumentType')}, {$this->getFormattedData('FundingActivityCategory')},
                 {$this->getFormattedData('OtherCategoryExplanation')}, {$this->getFormattedData('NumberOfAwards')}, {$this->getFormattedData('EstimatedFunding')}, {$this->getFormattedData('AwardCeiling')},
                 {$this->getFormattedData('AwardFloor')}, {$this->getFormattedData('AgencyMailingAddress')}, {$this->getFormattedData('FundingOppTitle')}, {$this->getFormattedData('FundingOppNumber')},
@@ -216,9 +277,9 @@ class FundingOpportunity{
                 {$this->getFormattedData('Location')}, {$this->getFormattedData('Office')}, {$this->getTranslatedFormattedData('Agency')}, {$this->getFormattedData('FundingOppDescription')}, {$this->getFormattedData('CFDANumber')},
                 {$this->getFormattedData('EligibilityCategory')}, {$this->getFormattedData('AdditionalEligibilityInfo')}, {$this->getFormattedData('CostSharing')},
                 {$this->getFormattedData('ObtainFundingOppText')}, {$this->getFormattedData('FundingOppURL')}, {$this->getFormattedData('AgencyContact')}, {$this->getFormattedData('AgencyEmailAddress')},
-                {$this->getFormattedData('AgencyEmailDescriptor')});";
-      }else{
-        $query = "UPDATE {$dbSchema}{$sfns}stgfoalead__c
+                {$this->getFormattedData('AgencyEmailDescriptor')}, 'Grants.gov', {$this->getTranslatedFormattedData('Status')});";
+        }else{
+          $query = "UPDATE {$dbSchema}{$sfns}stgfoalead__c
             set {$sfns}posteddate__c = {$this->getFormattedData('PostDate')}, {$sfns}modificationnumber__c = {$this->getFormattedData('ModificationNumber')},
             {$sfns}fundinginstrumenttype__c = {$this->getFormattedData('FundingInstrumentType')}, {$sfns}categoryoffundingactivity__c = {$this->getFormattedData('FundingActivityCategory')},
             {$sfns}categoryexplanation__c = {$this->getFormattedData('OtherCategoryExplanation')}, {$sfns}expectednumberofawards__c = {$this->getFormattedData('NumberOfAwards')},
@@ -230,9 +291,10 @@ class FundingOpportunity{
             {$sfns}fundingopportunitydescription__c = {$this->getFormattedData('FundingOppDescription')}, {$sfns}cfdanumber__c = {$this->getFormattedData('CFDANumber')},
             {$sfns}eligibilitycategory__c = {$this->getFormattedData('EligibilityCategory')}, {$sfns}additionaleligibilityinformation__c = {$this->getFormattedData('AdditionalEligibilityInfo')},
             {$sfns}costsharing__c = {$this->getFormattedData('CostSharing')}, {$sfns}additionalinformationurltext__c = {$this->getFormattedData('ObtainFundingOppText')}, {$sfns}fundingoppurl__c = {$this->getFormattedData('FundingOppURL')},
-            {$sfns}agencycontact__c = {$this->getFormattedData('AgencyContact')}, {$sfns}agencyemailaddress__c = {$this->getFormattedData('AgencyEmailAddress')}, {$sfns}agencyemaildescriptor__c = {$this->getFormattedData('AgencyEmailDescriptor')}
+            {$sfns}agencycontact__c = {$this->getFormattedData('AgencyContact')}, {$sfns}agencyemailaddress__c = {$this->getFormattedData('AgencyEmailAddress')}, {$sfns}agencyemaildescriptor__c = {$this->getFormattedData('AgencyEmailDescriptor')},
+            {$sfns}sourcestatus__c = {$this->getTranslatedFormattedData('Status')}
             WHERE {$sfns}fundingopportunitynumber__c = {$this->getFormattedData('FundingOppNumber')}";
-      }
+        }
 
       //fileLog('QUERY>>>' . $query);
 
@@ -246,6 +308,11 @@ class FundingOpportunity{
         if(!$result){
           throw new Exception(pg_errormessage());
         }
+      }
+
+      if($totalRecords >= 5){
+        fileLog("*************Breaked PROCESS:::::::::-{$foNumber}={$totalRecords}");
+        exit;
       }
 
     }catch (Exception $e){
