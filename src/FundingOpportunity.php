@@ -255,7 +255,7 @@ class FundingOpportunity{
           $totalRecords--;
           //fileLog("DECREASE totalRecords-{$totalRecords}-{$foNumber}");
         }
-        fileLog("Skipped FoNumber- {$foNumber}");
+        //fileLog("Skipped FoNumber- {$foNumber}");
         return;
       }
 
