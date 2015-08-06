@@ -346,7 +346,7 @@ function sendFOStatusEmail(){
   sendStatusEmail($details);
 }
 
-function sendStatusEmail($details = array()){
+function sendStatusEmail($details = array()){ return;
   global $dbType;
 
   if($dbType == 'mysql'){

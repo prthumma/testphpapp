@@ -239,6 +239,7 @@ class FundingOpportunity{
       $totalRecords++;
       //fileLog("INCREASE totalRecords-{$totalRecords}-{$foNumber}");
 
+      $appendCFDANumber = false;
       $rows = 0;
       if($dbType == 'mysql'){
         $result = mysql_query("SELECT Id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}' and ", $this->db);//mysql
@@ -247,11 +248,15 @@ class FundingOpportunity{
         if(!empty($cfdaNumber) && strlen($cfdaNumber) == 6){
           fileLog("*************COMPARE IFFFFFF CFDA - SELECT id FROM {$dbSchema}{$sfns}stgfoalead__c WHERE {$sfns}fundingopportunitynumber__c = '{$foNumber}' AND  {$sfns}cfdanumber__c = '{$cfdaNumber}'");
           $result = pg_query($db, "SELECT id FROM {$dbSchema}{$sfns}stgfoalead__c WHERE {$sfns}fundingopportunitynumber__c = '{$foNumber}' AND  {$sfns}cfdanumber__c = '{$cfdaNumber}'");//postgresql
+          $rows = pg_num_rows($result);//postgresql
+          if($rows > 0){
+            $appendCFDANumber = true;
+          }
         }else{
           fileLog("*************COMPARE ELSEEEE CFDA - SELECT id FROM {$dbSchema}{$sfns}stgfoalead__c WHERE {$sfns}fundingopportunitynumber__c = '{$foNumber}'");
           $result = pg_query($db, "SELECT id FROM {$dbSchema}{$sfns}stgfoalead__c WHERE {$sfns}fundingopportunitynumber__c = '{$foNumber}'");//postgresql
+          $rows = pg_num_rows($result);//postgresql
         }
-        $rows = pg_num_rows($result);//postgresql
       }
 
       fileLog("*************ROWS------------>:{$rows}");
@@ -323,6 +328,10 @@ class FundingOpportunity{
             {$sfns}agencycontact__c = {$this->getFormattedData('AgencyContact')}, {$sfns}agencyemailaddress__c = {$this->getFormattedData('AgencyEmailAddress')}, {$sfns}agencyemaildescriptor__c = {$this->getFormattedData('AgencyEmailDescriptor')},
             {$sfns}sourcestatus__c = {$this->getTranslatedFormattedData('Status')}
             WHERE {$sfns}fundingopportunitynumber__c = {$this->getFormattedData('FundingOppNumber')}";
+
+          if($appendCFDANumber){
+            $query .= " AND {$sfns}cfdanumber__c = '{$cfdaNumber}'";
+          }
         }
 
       //fileLog('QUERY>>>' . $query);
