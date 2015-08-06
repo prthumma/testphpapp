@@ -68,7 +68,19 @@ class FundingOpportunity{
           return $tempData ? $tempData : "cast(NULLIF('','') as double precision)";//postgresql
         }
         break;
-
+      case "CostSharing":
+        $tempData = null;
+        if($data == 'Y'){
+          $tempData = 'Yes';
+        }else{
+          $tempData = 'No';
+        }
+        if($dbType == 'mysql'){
+          return $tempData ? "'{$tempData}'" : "NULL";//mysql
+        }else{
+          return $tempData ? $tempData : "cast(NULLIF('','') as double precision)";//postgresql
+        }
+        break;
       default:
         $d = null;
         if(is_array($data)){
@@ -212,6 +224,8 @@ class FundingOpportunity{
     try{
 
       $foNumber = isset($this->data['FundingOppNumber']) ? $this->data['FundingOppNumber'] : null;
+      $cfdaNumber = isset($this->data['CFDANumber']) ? $this->data['CFDANumber'] : 'NULL';
+
       if(!isset($totalRecords)){
         $totalRecords = 0;
         //fileLog("INIT totalRecords-{$totalRecords}-{$foNumber}");
@@ -222,10 +236,14 @@ class FundingOpportunity{
 
       $rows = 0;
       if($dbType == 'mysql'){
-        $result = mysql_query("SELECT Id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}'", $this->db);//mysql
+        $result = mysql_query("SELECT Id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}' and ", $this->db);//mysql
         $rows = mysql_num_rows($result);//mysql
       }else{
-        $result = pg_query($db, "SELECT id FROM fundingopportunity WHERE fundingoppnumber = '{$foNumber}'");//postgresql
+        if(!empty($cfdaNumber) && strlen($cfdaNumber) == 6){
+          $result = pg_query($db, "SELECT id FROM {$dbSchema}{$sfns}stgfoalead__c WHERE {$sfns}fundingopportunitynumber__c = '{$foNumber}' AND  {$sfns}cfdanumber__c = '{$cfdaNumber}'");//postgresql
+        }else{
+          $result = pg_query($db, "SELECT id FROM {$dbSchema}{$sfns}stgfoalead__c WHERE {$sfns}fundingopportunitynumber__c = '{$foNumber}'");//postgresql
+        }
         $rows = pg_num_rows($result);//postgresql
       }
 
