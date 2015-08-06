@@ -269,7 +269,7 @@ class FundingOpportunity{
             {$sfns}location__c, {$sfns}office__c, {$sfns}federalagency__c, {$sfns}fundingopportunitydescription__c, {$sfns}cfdanumber__c,
             {$sfns}eligibilitycategory__c, {$sfns}additionaleligibilityinformation__c, {$sfns}costsharing__c,
             {$sfns}additionalinformationurltext__c, {$sfns}fundingoppurl__c, {$sfns}agencycontact__c, {$sfns}agencyemailaddress__c,
-            {$sfns}agencyemaildescriptor__c, {$sfns}source__c, {$sfns}sourcestatus__c)
+            {$sfns}agencyemaildescriptor__c, {$sfns}source__c, {$sfns}sourcestatus__c )
         VALUES ({$this->getFormattedData('PostDate')}, {$this->getFormattedData('ModificationNumber')}, {$this->getFormattedData('FundingInstrumentType')}, {$this->getFormattedData('FundingActivityCategory')},
                 {$this->getFormattedData('OtherCategoryExplanation')}, {$this->getFormattedData('NumberOfAwards')}, {$this->getFormattedData('EstimatedFunding')}, {$this->getFormattedData('AwardCeiling')},
                 {$this->getFormattedData('AwardFloor')}, {$this->getFormattedData('AgencyMailingAddress')}, {$this->getFormattedData('FundingOppTitle')}, {$this->getFormattedData('FundingOppNumber')},
