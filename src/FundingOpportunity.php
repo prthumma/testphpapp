@@ -10,6 +10,10 @@ class FundingOpportunity{
   }
 
   public function setData($key, $value){
+    if($key == 'CFDANumber' && $value == '000000'){
+      return;
+    }
+
     if(!isset($this->data[$key])){
       $this->data[$key] = $value;
     }else if(is_array($this->data[$key])){
