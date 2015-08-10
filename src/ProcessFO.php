@@ -79,7 +79,7 @@ try{
 }
 
 function setGlobalData(){
-  global $db, $acceptedElements, $accounts, $translateConfig, $dbType;
+  global $db, $acceptedElements, $accounts, $translateConfig, $sfns, $dbType;
 
   fileLog('Setting global data');
 
@@ -104,7 +104,8 @@ function setGlobalData(){
       $accounts[$agency] = $row->sfid;
     }
   }else{
-    $result = pg_query($db, 'SELECT name AS agency, sfid FROM salesforcemaster.account');//postgresql
+    $query = "SELECT name AS agency, sfid FROM salesforcemaster.account WHERE {$sfns}recordtypename__c = 'External'";
+    $result = pg_query($db, $query);//postgresql
     if(!$result){
       throw new Exception(pg_errormessage());
     }
